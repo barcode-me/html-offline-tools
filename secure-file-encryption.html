@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Secure file encryption</title>
+<style>
+:root {
+  color-scheme: dark;
+  --background: #090b0a;
+  --surface: #141816;
+  --surface-raised: #1a201d;
+  --border: #303832;
+  --text: #f2f4ef;
+  --muted: #a7b0a9;
+  --accent: #f2a900;
+  --accent-hover: #ffbd2e;
+  --error: #ff8c82;
+  --success: #89d99d;
+}
+* { box-sizing: border-box; }
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 32px 18px;
+  color: var(--text);
+  background: radial-gradient(circle at 50% 0%, #f2a90018, transparent 34rem), var(--background);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+main { width: min(820px, 100%); margin: 0 auto; }
+header { margin: 30px 0 28px; }
+.eyebrow { margin: 0 0 10px; color: var(--accent); font-size: .76rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+h1 { margin: 0; font-size: clamp(2rem, 7vw, 3.7rem); line-height: 1; letter-spacing: -.055em; }
+h2 { margin-top: 0; font-size: 1.2rem; }
+p { color: var(--muted); line-height: 1.6; }
+.intro { max-width: 650px; margin: 16px 0 0; line-height: 1.65; }
+.card { padding: clamp(20px, 4vw, 34px); margin: 24px 0; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+form.card { box-shadow: 0 24px 80px #00000047; }
+fieldset { min-width: 0; border: 0; padding: 0; margin: 0 0 24px; }
+#controls { margin-bottom: 0; }
+legend, .label { display: block; margin-bottom: 10px; font-weight: 700; }
+.choices { display: flex; gap: 24px; flex-wrap: wrap; }
+.choices label, .show { display: inline-flex; align-items: center; gap: 8px; }
+input { max-width: 100%; }
+input[type=radio], input[type=checkbox] { accent-color: var(--accent); }
+input[type=password], input[type=text], textarea {
+  display: block; width: 100%; padding: 14px 15px; border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); background: #0e110f; font: inherit;
+}
+textarea { min-height: 170px; resize: vertical; overflow-wrap: anywhere; font: .88rem/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+input[type=file] { width: 100%; color: var(--muted); font: .9rem system-ui, sans-serif; }
+button, .download, input::file-selector-button {
+  display: inline-block; min-height: 46px; padding: 12px 18px; border: 1px solid var(--border); border-radius: 9px;
+  color: var(--text); background: var(--surface-raised); font: inherit; font-size: .9rem; font-weight: 750;
+  cursor: pointer; text-decoration: none; overflow-wrap: anywhere;
+}
+input::file-selector-button { margin-right: 12px; }
+button:hover, .download:hover, input::file-selector-button:hover { border-color: #4a554e; }
+button[type=submit], .download { color: #17130a; background: var(--accent); border-color: transparent; }
+button[type=submit]:hover, .download:hover { background: var(--accent-hover); }
+button[type=submit] { flex: 1; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.password { margin-top: 24px; }
+.show { margin-top: 12px; color: var(--muted); font-size: .9rem; }
+.muted { font-size: .85rem; }
+#status { white-space: pre-wrap; color: var(--error); font-size: .9rem; }
+#status.success { color: var(--success); }
+[hidden] { display: none !important; }
+summary { cursor: pointer; font-weight: 700; }
+table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+td, th { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+code { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Shared offline-tools navigation; embedded to keep every page standalone. */
+.tools-menu { margin: 0 0 24px; padding: 0; border: 1px solid #303832; border-radius: 12px; background: #141816; color: #f2f4ef; }
+.tools-menu > summary { padding: 14px 18px; color: #f2a900; cursor: pointer; font: 700 .9rem/1.5 system-ui, sans-serif; }
+.tools-menu > summary:focus-visible, .tools-menu a:focus-visible { outline: 2px solid #f2a900; outline-offset: 3px; }
+.tools-menu nav { display: block; margin: 0; padding: 0 12px 12px; border: 0; background: transparent; }
+.tools-menu ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.tools-menu li { margin: 0; padding: 0; }
+.tools-menu a { display: block; padding: 10px 12px; border: 1px solid transparent; border-radius: 8px; color: #f2f4ef; font: 500 .88rem/1.5 system-ui, sans-serif; text-decoration: none; overflow-wrap: anywhere; }
+.tools-menu a:hover { background: #1a201d; border-color: #4a554e; }
+.tools-menu a[aria-current="page"] { color: #f2a900; background: #f2a90014; border-color: #f2a90055; }
+</style>
+</head>
+<body><main>
+<details class="tools-menu">
+  <summary>Tools menu</summary>
+  <nav aria-label="Offline tools">
+    <ul>
+      <li><a href="./diceware-passphrase.html">Diceware passphrases</a></li>
+      <li><a href="./bip39-seed-generator.html">BIP39 seed generator</a></li>
+      <li><a href="./yeti-encoder-decoder.html">Yeti encoder / decoder</a></li>
+      <li><a href="./qr-file-transfer.html">QR file transfer</a></li>
+      <li><a href="./nfc-card-reader-writer.html">NFC card reader / writer</a></li>
+      <li><a href="./secure-file-encryption.html" aria-current="page">Secure file encryption</a></li>
+      <li><a href="./password-manager.html">Passwords and TOTP</a></li>
+      <li><a href="./one-time-pad-encryption.html">One-time pad encryption</a></li>
+      <li><a href="./seed-one-time-pad-encryption.html">Seed one-time pad encryption</a></li>
+    </ul>
+  </nav>
+</details>
+
+<header>
+<p class="eyebrow">Offline tools</p>
+<h1>Secure file encryption</h1>
+<p class="intro">Encrypt files or text with a password. Everything runs locally in your browser; nothing is uploaded or saved by the page.</p>
+</header>
+<form id="form" class="card">
+<fieldset id="controls">
+<fieldset><legend>Operation</legend><div class="choices"><label><input type="radio" name="operation" id="encrypt" value="encrypt" checked> Encrypt</label><label><input type="radio" name="operation" id="decrypt" value="decrypt"> Decrypt</label></div></fieldset>
+<fieldset><legend>Input</legend><div class="choices"><label><input type="radio" name="source" id="file-mode" value="file" checked> File</label><label><input type="radio" name="source" id="text-mode" value="text"> Text</label></div></fieldset>
+<div id="file-panel"><label class="label" for="file" id="file-label">File to encrypt</label><input id="file" type="file"></div>
+<div id="text-panel" hidden><label class="label" for="input" id="input-label">Text to encrypt</label><textarea id="input" spellcheck="false" autocapitalize="off"></textarea><p id="text-help" class="muted"></p></div>
+<div class="password"><label class="label" for="password">Password</label><input id="password" type="password" autocomplete="new-password" required><label class="show"><input id="show-password" type="checkbox"> Show password</label></div>
+<div id="confirm-panel" class="password"><label class="label" for="confirm">Confirm password</label><input id="confirm" type="password" autocomplete="new-password"></div>
+<p class="muted" id="password-help">Use a strong, unique passphrase. A forgotten password cannot be recovered.</p>
+<div class="actions"><button id="submit" type="submit">Encrypt</button><button id="clear" type="button" class="secondary">Clear</button></div>
+</fieldset>
+</form>
+<p id="status" role="status" aria-live="polite"></p>
+<section id="result" class="card" hidden><h2 id="result-title">Result</h2><p id="result-info"></p><div class="actions"><a id="download" class="download" download>Download</a><button id="armor" type="button" class="secondary" hidden>Show encrypted text for copying</button></div><div id="output-panel" hidden><label for="output" class="label" style="margin-top:24px" id="output-label">Text output</label><textarea id="output" readonly spellcheck="false"></textarea></div></section>
+<p class="muted">AES-256-GCM · PBKDF2-SHA-256 · 600,000 iterations · random 16-byte salt and 12-byte IV. Files are processed in memory; available browser memory limits file size.</p>
+<details class="card"><summary>Binary format and compatibility</summary><p>Binary format version 2 (<code>.wec</code>) encrypts original bytes directly, including the filename. It does not read the original page’s JSON containers or version 1 / 100,000-iteration encryption. Optional Base64 text represents the exact same binary file for copy and paste; downloads never use Base64.</p>
+<p>All offsets are absolute, zero-based. Multi-byte integers are unsigned, little-endian. The entire 44-byte header is authenticated as AES-GCM additional data.</p>
+<table><thead><tr><th>Byte offset</th><th>Bytes</th><th>Field</th></tr></thead><tbody>
+<tr><td>0</td><td>4</td><td>Magic: ASCII WENC</td></tr><tr><td>4</td><td>1</td><td>Version: 2</td></tr><tr><td>5</td><td>1</td><td>Suite: 1 (algorithms above)</td></tr><tr><td>6</td><td>2</td><td>Salt offset: 16</td></tr><tr><td>8</td><td>2</td><td>IV offset: 32</td></tr><tr><td>10</td><td>2</td><td>Ciphertext offset: 44</td></tr><tr><td>12</td><td>4</td><td>Iterations: 600000</td></tr><tr><td>16</td><td>16</td><td>Salt</td></tr><tr><td>32</td><td>12</td><td>IV</td></tr><tr><td>44</td><td>Remaining</td><td>Ciphertext followed by 16-byte GCM tag</td></tr>
+</tbody></table><p>Decrypted payload: a 2-byte UTF-8 filename length, the filename bytes, then all original content bytes. Total overhead is 62 bytes plus the UTF-8 filename length. No MIME type is stored; recovered downloads use application/octet-stream.</p>
+</details>
+</main>
+<script>
+'use strict';
+const FORMAT = Object.freeze({version:2, iterations:600000, salt:16, iv:32, data:44});
+const utf8 = new TextEncoder();
+function strictText(bytes) { return new TextDecoder('utf-8', {fatal:true, ignoreBOM:true}).decode(bytes); }
+async function deriveKey(password, salt) {
+  if (!password) throw new Error('Enter a password.');
+  const material = await crypto.subtle.importKey('raw', utf8.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:FORMAT.iterations, hash:'SHA-256'}, material, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+}
+function parseHeader(bytes) {
+  if (bytes.length < 62) throw new Error('Invalid or truncated binary encrypted file. Original JSON files are not supported.');
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes[0]!==87 || bytes[1]!==69 || bytes[2]!==78 || bytes[3]!==67) throw new Error('Not a WENC binary file. Original JSON files are not supported.');
+  if (bytes[4]!==2) throw new Error('Unsupported version. Only binary version 2 is supported.');
+  if (bytes[5]!==1 || view.getUint16(6,true)!==16 || view.getUint16(8,true)!==32 || view.getUint16(10,true)!==44 || view.getUint32(12,true)!==600000) throw new Error('Unsupported or damaged encryption header.');
+  return {salt:bytes.subarray(16,32), iv:bytes.subarray(32,44), header:bytes.subarray(0,44), ciphertext:bytes.subarray(44)};
+}
+async function encryptBytes(password, bytes, filename='text.txt') {
+  const name = utf8.encode(filename);
+  if (name.length > 65535) throw new Error('Filename is too long.');
+  const header = new Uint8Array(44);
+  header.set([87,69,78,67,2,1]);
+  const view = new DataView(header.buffer);
+  view.setUint16(6,16,true); view.setUint16(8,32,true); view.setUint16(10,44,true); view.setUint32(12,600000,true);
+  crypto.getRandomValues(header.subarray(16,32)); crypto.getRandomValues(header.subarray(32,44));
+  const payload = new Uint8Array(2+name.length+bytes.length);
+  new DataView(payload.buffer).setUint16(0,name.length,true); payload.set(name,2); payload.set(bytes,2+name.length);
+  try {
+    const key = await deriveKey(password, header.subarray(16,32));
+    const ciphertext = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv:header.subarray(32,44), additionalData:header, tagLength:128},key,payload));
+    const output = new Uint8Array(header.length+ciphertext.length); output.set(header); output.set(ciphertext,header.length); return output;
+  } finally { payload.fill(0); }
+}
+async function decryptBytes(password, bytes) {
+  const parsed = parseHeader(bytes);
+  const key = await deriveKey(password, parsed.salt);
+  let payload;
+  try { payload = new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:parsed.iv,additionalData:parsed.header,tagLength:128},key,parsed.ciphertext)); }
+  catch { throw new Error('Incorrect password or damaged encrypted file.'); }
+  if (payload.length < 2) throw new Error('Invalid encrypted payload.');
+  const length = new DataView(payload.buffer).getUint16(0,true);
+  if (length > payload.length-2) throw new Error('Invalid encrypted filename length.');
+  const filename = strictText(payload.subarray(2,2+length));
+  return {filename, bytes:payload.subarray(2+length)};
+}
+function toBase64(bytes) {
+  let binary='';
+  for(let i=0;i<bytes.length;i+=32768) binary+=String.fromCharCode(...bytes.subarray(i,i+32768));
+  return btoa(binary);
+}
+function fromBase64(text) {
+  const value=text.replace(/\s/g,'');
+  if (!value || value.length%4!==0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) throw new Error('Paste the complete Base64 encrypted text generated by this tool.');
+  return Uint8Array.from(atob(value), c=>c.charCodeAt(0));
+}
+function safeFilename(name) { return name.replace(/[\\/\x00-\x1f\x7f]/g,'_').replace(/^\.+$/,'_') || 'decrypted.bin'; }
+</script>
+<script>
+'use strict';
+const $ = id=>document.getElementById(id);
+let downloadUrl=null, encryptedOutput=null;
+function clearResult() {
+  if(downloadUrl) URL.revokeObjectURL(downloadUrl);
+  downloadUrl=null; encryptedOutput=null;
+  $('download').removeAttribute('href'); $('result').hidden=true; $('output').value=''; $('output-panel').hidden=true; $('armor').hidden=true;
+  $('status').textContent=''; $('status').className='';
+}
+function updateMode() {
+  clearResult();
+  const decrypt=$('decrypt').checked, file=$('file-mode').checked;
+  $('file-panel').hidden=!file; $('text-panel').hidden=file;
+  $('file-label').textContent=decrypt?'Encrypted binary file (.wec)':'File to encrypt';
+  $('input-label').textContent=decrypt?'Encrypted text (Base64)':'Text to encrypt';
+  $('text-help').textContent=decrypt?'Paste the optional encrypted text produced by this page. Binary files can be loaded using File mode.':'Text is encoded as UTF-8. Spaces and line breaks are preserved.';
+  $('confirm-panel').hidden=decrypt; $('confirm').required=!decrypt;
+  $('password').autocomplete=decrypt?'current-password':'new-password';
+  $('submit').textContent=decrypt?'Decrypt':'Encrypt';
+}
+for(const id of ['encrypt','decrypt','file-mode','text-mode']) $(id).addEventListener('change',()=>{ $('input').value=''; updateMode(); });
+for(const id of ['file','input','password','confirm']) $(id).addEventListener('input',clearResult);
+$('show-password').addEventListener('change',()=>{for(const id of ['password','confirm']) $(id).type=$('show-password').checked?'text':'password';});
+$('clear').addEventListener('click',()=>{ $('form').reset(); $('password').type='password'; $('confirm').type='password'; updateMode(); });
+$('armor').addEventListener('click',()=>{if(encryptedOutput){$('output').value=toBase64(encryptedOutput);$('output-label').textContent='Encrypted text (Base64; larger than the binary download)';$('output-panel').hidden=false;}});
+$('form').addEventListener('submit',async event=>{
+  event.preventDefault(); clearResult();
+  const decrypt=$('decrypt').checked, fileMode=$('file-mode').checked, file=$('file').files[0], password=$('password').value;
+  $('controls').disabled=true; $('status').textContent=decrypt?'Decrypting…':'Encrypting…';
+  try {
+    if(!globalThis.crypto?.subtle) throw new Error('Web Crypto is unavailable. Open this page in a modern browser using a local file or HTTPS.');
+    if(!password) throw new Error('Enter a password.');
+    if(!decrypt && password!==$('confirm').value) throw new Error('Passwords do not match.');
+    if(fileMode && !file) throw new Error('Select a file first.');
+    const bytes=fileMode?new Uint8Array(await file.arrayBuffer()):decrypt?fromBase64($('input').value):utf8.encode($('input').value);
+    let output, filename;
+    if(decrypt) {
+      const recovered=await decryptBytes(password,bytes); output=recovered.bytes; filename=safeFilename(recovered.filename);
+      try { const text=strictText(output); if(!/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(text)) { $('output').value=text; $('output-label').textContent='Decrypted text (UTF-8)'; $('output-panel').hidden=false; } } catch {}
+    } else {
+      const originalName=fileMode?file.name:'text.txt'; output=await encryptBytes(password,bytes,originalName); filename=safeFilename(originalName)+'.wec'; encryptedOutput=output; $('armor').hidden=false;
+    }
+    downloadUrl=URL.createObjectURL(new Blob([output],{type:'application/octet-stream'}));
+    $('download').href=downloadUrl; $('download').download=filename; $('download').textContent='Download '+filename;
+    $('result-title').textContent=decrypt?'Decrypted successfully':'Encrypted successfully';
+    $('result-info').textContent=output.length.toLocaleString()+' bytes · '+(decrypt?'Original content restored.':'Binary file ready to save.');
+    $('result').hidden=false; $('status').textContent='';
+  } catch(error) { clearResult(); $('status').textContent=error.message || 'Operation failed.'; $('status').className='error'; }
+  finally { $('controls').disabled=false; }
+});
+window.addEventListener('pagehide',clearResult);
+updateMode();
+</script></body></html>

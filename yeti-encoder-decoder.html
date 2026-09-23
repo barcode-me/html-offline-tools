@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Yeti encoder and decoder</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; padding: 32px 18px; color: #f2f4ef; background: radial-gradient(circle at 50% 0%, #f2a90018, transparent 34rem), #090b0a; font-family: system-ui, sans-serif; }
+main { max-width: 820px; margin: 30px auto; }
+.eyebrow { color: #f2a900; text-transform: uppercase; letter-spacing: .14em; font-size: .76rem; font-weight: 750; }
+h1 { font-size: clamp(2rem, 7vw, 3.7rem); letter-spacing: -.055em; margin: 0; }
+p { color: #a7b0a9; line-height: 1.6; }
+form, section { padding: clamp(18px, 4vw, 30px); margin-top: 24px; border: 1px solid #303832; border-radius: 18px; background: #141816; }
+label { display: block; margin: 18px 0 9px; font-weight: 700; }
+label:first-child { margin-top: 0; }
+textarea { display: block; width: 100%; padding: 14px; border: 1px solid #303832; border-radius: 10px; color: #f2f4ef; background: #0e110f; font: .88rem/1.6 ui-monospace, monospace; resize: vertical; overflow-wrap: anywhere; }
+input { max-width: 100%; }
+button, input::file-selector-button { padding: 12px 18px; border: 1px solid #303832; border-radius: 9px; background: #1a201d; color: #f2f4ef; font: inherit; cursor: pointer; }
+button[type=submit] { background: #f2a900; color: #17130a; font-weight: 750; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+:focus-visible { outline: 2px solid #f2a900; outline-offset: 3px; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+.decoded-download { margin-top: 48px; padding-top: 24px; border-top: 1px solid #303832; }
+#download-decoded { background: #b4232f; border-color: #cf3945; color: #fff; }
+#download-decoded:hover:not(:disabled) { background: #cf2f3d; }
+.note { font-size: .85rem; }
+#status { min-height: 1.6em; color: #ff8c82; }
+#status.success { color: #89d99d; }
+fieldset { margin: 0 0 20px; padding: 0; border: 0; }
+legend { margin-bottom: 10px; font-weight: 700; }
+.mode-option { display: inline-flex; align-items: center; gap: 8px; margin: 0 24px 0 0; }
+input[type=radio] { accent-color: #f2a900; }
+[hidden] { display: none !important; }
+.numbered-output { display: flex; align-items: stretch; }
+.output-gutter { position: relative; flex: 0 0 6ch; color: #f2a900; background: #1a201d; border: 1px solid #303832; border-right: 0; border-radius: 10px 0 0 10px; user-select: none; }
+.output-gutter pre { position: absolute; inset: 0; margin: 0; padding: 14px 10px; overflow: hidden; text-align: right; font: .88rem/1.6 ui-monospace, monospace; }
+.numbered-output textarea { min-width: 0; }
+.numbered-output.has-numbers textarea { border-radius: 0 10px 10px 0; }
+#print-output { display: none; }
+@media print {
+  @page { size: A4; margin: 15mm; }
+  body { margin: 0; padding: 0; background: white; color: black; }
+  main { display: none; }
+  #print-output { display: block; font: 8pt/1.5 ui-monospace, monospace; }
+  #print-rows { width: 100%; table-layout: fixed; border-collapse: collapse; font: inherit; }
+  #print-rows tr { break-inside: avoid; page-break-inside: avoid; }
+  #print-rows td { width: 50%; vertical-align: top; padding: 0; }
+  #print-rows td:first-child { padding-right: 4mm; }
+  #print-rows td:last-child { padding-left: 4mm; }
+  .print-row { break-inside: avoid; display: flex; gap: 1.5mm; }
+  .line-number { color: #555; min-width: 4ch; text-align: right; flex-shrink: 0; }
+  .row-words { overflow-wrap: anywhere; }
+}
+.decode-row { margin: 14px 0; }
+.decode-entry { display: flex; align-items: center; gap: 10px; }
+.decode-number { min-width: 3ch; text-align: right; }
+.decode-entry input { width: 100%; min-width: 0; padding: 12px; background: #0e110f; color: #f2f4ef; border: 1px solid #303832; border-radius: 8px; font: .85rem/1.5 ui-monospace, monospace; }
+.row-feedback, #decode-status { color: #ff8c82; font-size: .85rem; }
+.row-feedback { margin: 5px 0 0 calc(3ch + 10px); line-height: 1.4; }
+.row-feedback:empty { display: none; }
+#decode-status.success { color: #89d99d; }
+.suggestions { display: flex; gap: 8px; margin: 6px 0 0 4ch; }
+.suggestions:empty { display: none; }
+.suggestions button { padding: 6px 10px; }
+.suggestions button[aria-selected="true"] { border-color: #f2a900; background: #352b12; }
+.totp-card { padding: 18px; margin-top: 16px; background: #0e110f; overflow-wrap: anywhere; }
+.totp-card h3 { margin: 0; font-size: 1rem; }
+.text-line-value { white-space: pre-wrap; overflow-wrap: anywhere; color: #f2f4ef; font: .88rem/1.6 ui-monospace, monospace; }
+.totp-code { margin: 12px 0; color: #f2a900; font: 700 clamp(1.5rem, 6vw, 2.4rem)/1.4 ui-monospace, monospace; letter-spacing: .08em; }
+.password-field { display: block; width: 100%; padding: 12px 14px; border: 1px solid #303832; border-radius: 10px; color: #f2f4ef; background: #0e110f; font: inherit; }
+input[type=checkbox] { accent-color: #f2a900; }
+h2 { margin-top: 0; font-size: 1.2rem; }
+
+/* Shared offline-tools navigation; embedded to keep every page standalone. */
+.tools-menu { margin: 0 0 24px; padding: 0; border: 1px solid #303832; border-radius: 12px; background: #141816; color: #f2f4ef; }
+.tools-menu > summary { padding: 14px 18px; color: #f2a900; cursor: pointer; font: 700 .9rem/1.5 system-ui, sans-serif; }
+.tools-menu > summary:focus-visible, .tools-menu a:focus-visible { outline: 2px solid #f2a900; outline-offset: 3px; }
+.tools-menu nav { display: block; margin: 0; padding: 0 12px 12px; border: 0; background: transparent; }
+.tools-menu ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.tools-menu li { margin: 0; padding: 0; }
+.tools-menu a { display: block; padding: 10px 12px; border: 1px solid transparent; border-radius: 8px; color: #f2f4ef; font: 500 .88rem/1.5 system-ui, sans-serif; text-decoration: none; overflow-wrap: anywhere; }
+.tools-menu a:hover { background: #1a201d; border-color: #4a554e; }
+.tools-menu a[aria-current="page"] { color: #f2a900; background: #f2a90014; border-color: #f2a90055; }
+</style>
+</head>
+<body>
+<main>
+<details class="tools-menu">
+  <summary>Tools menu</summary>
+  <nav aria-label="Offline tools">
+    <ul>
+      <li><a href="./diceware-passphrase.html">Diceware passphrases</a></li>
+      <li><a href="./bip39-seed-generator.html">BIP39 seed generator</a></li>
+      <li><a href="./yeti-encoder-decoder.html" aria-current="page">Yeti encoder / decoder</a></li>
+      <li><a href="./qr-file-transfer.html">QR file transfer</a></li>
+      <li><a href="./nfc-card-reader-writer.html">NFC card reader / writer</a></li>
+      <li><a href="./secure-file-encryption.html">Secure file encryption</a></li>
+      <li><a href="./password-manager.html">Passwords and TOTP</a></li>
+      <li><a href="./one-time-pad-encryption.html">One-time pad encryption</a></li>
+      <li><a href="./seed-one-time-pad-encryption.html">Seed one-time pad encryption</a></li>
+    </ul>
+  </nav>
+</details>
+
+<header>
+<p class="eyebrow">Offline tools</p>
+<h1>Yeti encoder and decoder</h1>
+<p>Encode UTF-8 text or the raw bytes of any file as case-sensitive Yeti phonetic rows.</p>
+<p class="note">Runs entirely in your browser. Nothing is sent over the network or saved by this page.</p>
+</header>
+<fieldset>
+<legend>Conversion mode</legend>
+<label class="mode-option"><input id="operation-encode" type="radio" name="operation" checked> Encode</label>
+<label class="mode-option"><input id="operation-decode" type="radio" name="operation"> Decode</label>
+</fieldset>
+<div id="encoding-panel">
+<form id="converter">
+<fieldset>
+<legend>Input mode</legend>
+<label class="mode-option"><input id="mode-text" type="radio" name="mode" value="text" checked> Plain text</label>
+<label class="mode-option"><input id="mode-hex" type="radio" name="mode" value="hex"> Hex</label>
+<label class="mode-option"><input id="mode-file" type="radio" name="mode" value="file"> File</label>
+</fieldset>
+<div id="hex-panel" hidden>
+<label for="hex-input">Hex string (binary data)</label>
+<textarea id="hex-input" rows="4" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="hex-help" placeholder="Enter hex to encode" disabled></textarea>
+<p id="hex-help" class="note">Hex digits (0–9, a–f) are converted to bytes before encoding. Whitespace is ignored. An odd number of digits is padded with a trailing 0 to form whole bytes; for example, abc becomes abc0. Leading zeros are preserved.</p>
+</div>
+<div id="file-panel" hidden>
+<label for="file">Upload a file (raw bytes)</label>
+<input id="file" type="file" disabled>
+<p class="note">The file’s original bytes are encoded. Large files take longer and produce much larger output.</p>
+</div>
+<div id="text-panel">
+<label for="input">Text (UTF-8)</label>
+<textarea id="input" rows="4" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="input-help" placeholder="Enter text to encode"></textarea>
+<p id="input-help" class="note">Text is encoded as UTF-8, including whitespace. There is no fixed input size limit, but large files take longer and produce much larger output.</p>
+</div>
+<label class="mode-option"><input id="encrypt-enabled" type="checkbox"> Encrypt with a password before encoding</label>
+<div id="encrypt-options" hidden>
+<label for="encrypt-password">Password</label><input class="password-field" id="encrypt-password" type="password" autocomplete="new-password">
+<label for="encrypt-confirm">Confirm password</label><input class="password-field" id="encrypt-confirm" type="password" autocomplete="new-password">
+<p class="note">Uses the same binary format as Secure file encryption: AES-256-GCM and PBKDF2-SHA-256 with 600,000 iterations. The filename is encrypted too. Keep your password separately; it cannot be recovered.</p>
+</div>
+<div class="actions"><button type="submit" id="convert">Convert to Yeti</button><button type="button" id="clear">Clear</button></div>
+<p id="status" role="status" aria-live="polite"></p>
+</form>
+<section aria-labelledby="output-title">
+<h2 id="output-title">Yeti output</h2>
+<label for="output">Case-sensitive phonetic record</label>
+<div id="output-container" class="numbered-output"><div id="output-gutter" class="output-gutter" aria-hidden="true" hidden><pre id="output-line-numbers"></pre></div><textarea id="output" rows="15" readonly spellcheck="false" placeholder="The encoded record will appear here."></textarea></div>
+<div class="actions"><button type="button" id="copy-yeti" disabled>Copy Yeti words</button><button type="button" id="download" disabled>Download .txt</button><button type="button" id="print" disabled>Print / Save as PDF</button></div>
+<p class="note">Each row includes a sum-modulo-58 checksum. The final five digit words encode the last two bytes of SHA-256 over the word rows. No checksum prefix is required or added. This format is raw bytes, not WIF or an original Yeti wallet recovery seed.</p>
+</section>
+</div>
+<section id="decoding-panel" hidden>
+<h2>Decode Yeti words</h2>
+<p class="note">Enter one row per input, or paste multiple lines. Each data row has four words plus its checksum; the final data row may be shorter. The last row is always the five uppercase digit words of the final checksum. Case matters. Automatic validation runs when you leave an input. Use ↑/↓ to select a suggestion, Enter or Tab to accept, and Escape to dismiss. With suggestions closed, Enter adds a row.</p>
+<label class="mode-option"><input id="decrypt-enabled" type="checkbox"> Decrypt password-encrypted Yeti content</label>
+<div id="decrypt-options" hidden><label for="decrypt-password">Password</label><input class="password-field" id="decrypt-password" type="password" autocomplete="current-password"></div>
+<p class="note">Enable decryption for records encrypted by this page, or Yeti records made from a Secure file encryption .wec file. Leave it off to recover the encoded bytes directly.</p>
+<div id="decode-rows"></div>
+<div class="actions"><button id="add-row" type="button">Add row</button><button id="decode-button" type="button">Decode</button><button id="clear-decode" type="button">Clear</button></div>
+<p id="decode-status" role="status" aria-live="polite"></p>
+<div id="totp-cards" aria-label="One-time passwords" hidden></div>
+<div id="text-line-cards" aria-label="Recovered text lines" hidden></div>
+<p class="note">Each recovered otpauth://totp/ URI on its own line displays a live code labeled with its issuer and account. Codes use your device clock.</p>
+<label for="decoded-format">Display format</label>
+<select id="decoded-format" disabled><option value="utf8">UTF-8</option><option value="hex">Hex</option></select>
+<p id="decoded-format-note" class="note"></p>
+<label id="decoded-text-label" for="decoded-text">Recovered text (UTF-8)</label>
+<textarea id="decoded-text" rows="5" readonly></textarea>
+<div class="actions"><button id="reveal-decoded" type="button" aria-pressed="false">Reveal decoded output</button></div>
+<div class="actions decoded-download"><button id="download-decoded" type="button" disabled>Download recovered bytes</button></div>
+<p class="note">Downloads preserve the original bytes. Valid UTF-8 defaults to text; other bytes default to hex. You can switch display formats. Invalid UTF-8 sequences appear as replacement characters (�) in text view. Password-encrypted records restore the original filename. Unencrypted records do not store a filename.</p>
+</section>
+</main>
+<div id="print-output">
+<table id="print-rows" aria-label="Numbered Yeti rows"></table>
+</div>
+<script>
+
+'use strict';
+const FORMAT = Object.freeze({version:2, iterations:600000, salt:16, iv:32, data:44});
+const utf8 = new TextEncoder();
+function strictText(bytes) { return new TextDecoder('utf-8', {fatal:true, ignoreBOM:true}).decode(bytes); }
+async function deriveKey(password, salt) {
+  if (!password) throw new Error('Enter a password.');
+  const material = await crypto.subtle.importKey('raw', utf8.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:FORMAT.iterations, hash:'SHA-256'}, material, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+}
+function parseHeader(bytes) {
+  if (bytes.length < 62) throw new Error('Invalid or truncated binary encrypted file. Original JSON files are not supported.');
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes[0]!==87 || bytes[1]!==69 || bytes[2]!==78 || bytes[3]!==67) throw new Error('Not a WENC binary file. Original JSON files are not supported.');
+  if (bytes[4]!==2) throw new Error('Unsupported version. Only binary version 2 is supported.');
+  if (bytes[5]!==1 || view.getUint16(6,true)!==16 || view.getUint16(8,true)!==32 || view.getUint16(10,true)!==44 || view.getUint32(12,true)!==600000) throw new Error('Unsupported or damaged encryption header.');
+  return {salt:bytes.subarray(16,32), iv:bytes.subarray(32,44), header:bytes.subarray(0,44), ciphertext:bytes.subarray(44)};
+}
+async function encryptBytes(password, bytes, filename='text.txt') {
+  const name = utf8.encode(filename);
+  if (name.length > 65535) throw new Error('Filename is too long.');
+  const header = new Uint8Array(44);
+  header.set([87,69,78,67,2,1]);
+  const view = new DataView(header.buffer);
+  view.setUint16(6,16,true); view.setUint16(8,32,true); view.setUint16(10,44,true); view.setUint32(12,600000,true);
+  crypto.getRandomValues(header.subarray(16,32)); crypto.getRandomValues(header.subarray(32,44));
+  const payload = new Uint8Array(2+name.length+bytes.length);
+  new DataView(payload.buffer).setUint16(0,name.length,true); payload.set(name,2); payload.set(bytes,2+name.length);
+  try {
+    const key = await deriveKey(password, header.subarray(16,32));
+    const ciphertext = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv:header.subarray(32,44), additionalData:header, tagLength:128},key,payload));
+    const output = new Uint8Array(header.length+ciphertext.length); output.set(header); output.set(ciphertext,header.length); return output;
+  } finally { payload.fill(0); }
+}
+async function decryptBytes(password, bytes) {
+  const parsed = parseHeader(bytes);
+  const key = await deriveKey(password, parsed.salt);
+  let payload;
+  try { payload = new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:parsed.iv,additionalData:parsed.header,tagLength:128},key,parsed.ciphertext)); }
+  catch { throw new Error('Incorrect password or damaged encrypted file.'); }
+  if (payload.length < 2) throw new Error('Invalid encrypted payload.');
+  const length = new DataView(payload.buffer).getUint16(0,true);
+  if (length > payload.length-2) throw new Error('Invalid encrypted filename length.');
+  const filename = strictText(payload.subarray(2,2+length));
+  return {filename, bytes:payload.subarray(2+length)};
+}
+function toBase64(bytes) {
+  let binary='';
+  for(let i=0;i<bytes.length;i+=32768) binary+=String.fromCharCode(...bytes.subarray(i,i+32768));
+  return btoa(binary);
+}
+function fromBase64(text) {
+  const value=text.replace(/\s/g,'');
+  if (!value || value.length%4!==0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) throw new Error('Paste the complete Base64 encrypted text generated by this tool.');
+  return Uint8Array.from(atob(value), c=>c.charCodeAt(0));
+}
+function safeFilename(name) { return name.replace(/[\\/\x00-\x1f\x7f]/g,'_').replace(/^\.+$/,'_') || 'decrypted.bin'; }
+
+const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+const DIGIT_WORDS = 'ZERO ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT NINE'.split(' ');
+const NATO = 'alfa bravo charlie delta echo foxtrot golf hotel india juliett kilo lima mike november oscar papa quebec romeo sierra tango uniform victor whiskey x-ray yankee zulu'.split(' ');
+const CHAR_TO_WORD = new Map();
+NATO.forEach((word, i) => {
+  CHAR_TO_WORD.set(String.fromCharCode(97 + i), word);
+  CHAR_TO_WORD.set(String.fromCharCode(65 + i), word.toUpperCase());
+});
+DIGIT_WORDS.slice(1).forEach((word, i) => CHAR_TO_WORD.set(String(i + 1), word));
+
+function hexToBytes(value) {
+  const hex = value.replace(/\s/g, '');
+  if (!hex) throw new Error('Enter hex to encode.');
+  if (!/^[0-9a-f]+$/i.test(hex)) throw new Error('Use only hex digits (0–9, a–f) and whitespace.');
+  const padded = hex.length % 2 ? hex + '0' : hex;
+  return Uint8Array.from(padded.match(/.{2}/g), pair => parseInt(pair, 16));
+}
+async function encodeYeti(bytes, isCurrent = () => true) {
+  const pause = async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    if (!isCurrent()) throw new Error('Conversion cancelled.');
+  };
+  let leadingZeros = 0;
+  while (leadingZeros < bytes.length && bytes[leadingZeros] === 0) leadingZeros++;
+  let value = 0n;
+  for (let i = leadingZeros; i < bytes.length; i++) {
+    value = (value << 8n) | BigInt(bytes[i]);
+    if (i % 4096 === 4095) await pause();
+  }
+  const digits = [];
+  while (value > 0n) {
+    digits.push(BASE58[Number(value % 58n)]);
+    value /= 58n;
+    if (digits.length % 1024 === 0) await pause();
+  }
+  const base58 = '1'.repeat(leadingZeros) + digits.reverse().join('');
+  const rows = [];
+  for (let offset = 0; offset < base58.length; offset += 4) {
+    if (offset % 4096 === 0) await pause();
+    const group = base58.slice(offset, offset + 4);
+    const rowChecksum = BASE58[Array.from(group).reduce((sum, char) => sum + BASE58.indexOf(char), 0) % 58];
+    rows.push(Array.from(group + rowChecksum, char => CHAR_TO_WORD.get(char)).join(' '));
+  }
+  const words = rows.join('\n');
+  if (!globalThis.crypto?.subtle) throw new Error('SHA-256 is unavailable. Open this file in a modern browser with Web Crypto support.');
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(words)));
+  const finalChecksum = String(digest[30] * 256 + digest[31]).padStart(5, '0');
+  const finalWords = Array.from(finalChecksum, digit => DIGIT_WORDS[Number(digit)]).join(' ');
+  return `${words ? words + '\n' : ''}${finalWords}`;
+}
+
+const WORD_TO_CHAR = new Map(Array.from(CHAR_TO_WORD, ([char, word]) => [word, char]).filter(([word, char]) => BASE58.includes(char)));
+function inspectYetiRow(line, index, total) {
+  const words = line.trim() ? line.trim().split(/\s+/) : [];
+  const final = index === total - 1;
+  if (final) {
+    if (words.some(word => !DIGIT_WORDS.includes(word))) return {error: 'Final checksum accepts only uppercase digit words ZERO through NINE.'};
+    if (words.length !== 5) return {error: 'Final checksum requires exactly five digit words.'};
+    const number = Number(words.map(word => DIGIT_WORDS.indexOf(word)).join(''));
+    if (number > 65535) return {error: 'Final checksum must be between 00000 and 65535.'};
+    return {words, number};
+  }
+  const invalid = words.find(word => !WORD_TO_CHAR.has(word));
+  if (invalid !== undefined) return {error: `Invalid case-sensitive Base58 word: “${invalid}”.`};
+  if (words.length !== 5 && !(index === total - 2 && words.length >= 2 && words.length <= 5)) return {error: 'Use four data words and one checksum word (the last data row may have fewer data words).'};
+  const chars = words.map(word => WORD_TO_CHAR.get(word));
+  const data = chars.slice(0, -1);
+  const expected = BASE58[data.reduce((sum, char) => sum + BASE58.indexOf(char), 0) % 58];
+  return {words, data: data.join(''), warning: chars.at(-1) !== expected ? 'Row checksum mismatch. Check the words and their case.' : ''};
+}
+async function decodeYeti(lines) {
+  if (!lines.length) throw new Error('Enter the word rows and final checksum.');
+  const checked = lines.map((line, i) => inspectYetiRow(line, i, lines.length));
+  const bad = checked.findIndex(row => row.error || row.warning);
+  if (bad !== -1) throw new Error(`Row ${bad + 1}: ${checked[bad].error || checked[bad].warning}`);
+  if (!globalThis.crypto?.subtle) throw new Error('SHA-256 is unavailable in this browser.');
+  const body = checked.slice(0, -1).map(row => row.words.join(' ')).join('\n');
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body)));
+  if (hash[30] * 256 + hash[31] !== checked.at(-1).number) throw new Error(`Row ${lines.length}: final SHA-256 checksum mismatch.`);
+  const base58 = checked.slice(0, -1).map(row => row.data).join('');
+  let value = 0n;
+  for (let i = 0; i < base58.length; i++) {
+    value = value * 58n + BigInt(BASE58.indexOf(base58[i]));
+    if (i % 4096 === 4095) await new Promise(resolve => setTimeout(resolve, 0));
+  }
+  const bytes = [];
+  while (value) { bytes.push(Number(value & 255n)); value >>= 8n; }
+  const zeros = base58.match(/^1*/)[0].length;
+  const result = new Uint8Array(zeros + bytes.length);
+  result.set(bytes.reverse(), zeros);
+  return result;
+}
+function suggestWords(token, final) {
+  if (!token) return [];
+  const prefix = token.toLowerCase();
+  const vocabulary = final ? DIGIT_WORDS : [...NATO.flatMap(word => [word, word.toUpperCase()]), ...DIGIT_WORDS.slice(1)];
+  return vocabulary.filter(word => word.toLowerCase().startsWith(prefix))
+    .sort((a, b) => Number(b.startsWith(token)) - Number(a.startsWith(token)));
+}
+
+// Based on the supplied generateTOTP function; no secrets or intermediate values are logged.
+function decodeBase32Secret(secret) {
+  const value = secret.toUpperCase().replace(/=+$/, '');
+  if (!value || !/^[A-Z2-7]+$/.test(value)) throw new Error('Invalid Base32 secret.');
+  let bits = '';
+  for (const char of value) bits += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'.indexOf(char).toString(2).padStart(5, '0');
+  const bytes = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) bytes.push(parseInt(bits.slice(i, i + 8), 2));
+  if (!bytes.length) throw new Error('Secret is too short.');
+  return new Uint8Array(bytes);
+}
+function normalizeTOTPAlgorithm(algorithm) {
+  const normalized = algorithm.toUpperCase().replace(/^SHA-?/, 'SHA-');
+  if (!['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'].includes(normalized)) throw new Error('Unsupported TOTP algorithm.');
+  return normalized;
+}
+async function generateTOTP(base32Secret, interval = 30, length = 6, algorithm = 'SHA-1', now = Date.now()) {
+  if (!Number.isSafeInteger(interval) || interval < 1) throw new Error('Period must be a positive integer.');
+  if (!Number.isInteger(length) || length < 1 || length > 10) throw new Error('Digits must be an integer from 1 to 10.');
+  algorithm = normalizeTOTPAlgorithm(algorithm);
+  const decodedSecret = decodeBase32Secret(base32Secret);
+  const timeCounter = Math.floor(now / 1000 / interval);
+  if (!Number.isSafeInteger(timeCounter) || timeCounter < 0) throw new Error('Invalid system time.');
+  const timeBuffer = new ArrayBuffer(8);
+  new DataView(timeBuffer).setBigUint64(0, BigInt(timeCounter), false);
+  const key = await crypto.subtle.importKey('raw', decodedSecret, {name:'HMAC', hash:algorithm}, false, ['sign']);
+  const hmac = new Uint8Array(await crypto.subtle.sign('HMAC', key, timeBuffer));
+  const offset = hmac[hmac.length - 1] & 0x0f;
+  const binaryCode = new DataView(hmac.buffer).getUint32(offset, false) & 0x7fffffff;
+  return String(binaryCode % 10 ** length).padStart(length, '0');
+}
+function scanTOTPUris(text) {
+  const results = [];
+  text.split(/\r\n|\r|\n/).forEach((line, index) => {
+    const value = line.trim();
+    if (!/^otpauth:\/\/totp(?:\/|\?|$)/i.test(value)) return;
+    const entry = {line:index + 1, label:`TOTP on line ${index + 1}`};
+    try {
+      const uri = new URL(value);
+      const label = decodeURIComponent(uri.pathname.slice(1));
+      const colon = label.indexOf(':');
+      const labelIssuer = colon < 0 ? '' : label.slice(0, colon).trim();
+      const account = (colon < 0 ? label : label.slice(colon + 1)).trim();
+      const issuer = uri.searchParams.get('issuer')?.trim() || labelIssuer;
+      entry.label = [issuer, account].filter(Boolean).join(' · ') || entry.label;
+      if (uri.username || uri.password || uri.port || uri.hash) throw new Error('Invalid TOTP URI.');
+      for (const name of ['secret','issuer','algorithm','digits','period']) {
+        if (uri.searchParams.getAll(name).length > 1) throw new Error(`Duplicate ${name} parameter.`);
+      }
+      entry.secret = uri.searchParams.get('secret') || '';
+      decodeBase32Secret(entry.secret);
+      entry.algorithm = normalizeTOTPAlgorithm(uri.searchParams.get('algorithm') ?? 'SHA1');
+      function integer(name, fallback, max) {
+        const raw = uri.searchParams.get(name) ?? String(fallback);
+        const number = Number(raw);
+        if (!/^\d+$/.test(raw) || !Number.isSafeInteger(number) || number < 1 || number > max) throw new Error(`Invalid ${name} parameter.`);
+        return number;
+      }
+      entry.digits = integer('digits', 6, 10);
+      entry.period = integer('period', 30, Number.MAX_SAFE_INTEGER);
+    } catch (error) { entry.error = error.message; }
+    results.push(entry);
+  });
+  return results;
+}
+function maskDecodedText(text) { return text.replace(/[^\r\n]/gu, '*'); }
+function showTextLineCards(text, container) {
+  container.replaceChildren();
+  let active = true;
+  let count = 0;
+  text.split(/\r\n|\r|\n/).forEach((line, index) => {
+    if (!line.trim() || /^otpauth:\/\/totp(?:\/|\?|$)/i.test(line.trim())) return;
+    count++;
+    const section = document.createElement('section'); section.className = 'totp-card';
+    const separator = line.indexOf(':');
+    const label = separator < 0 ? `Line ${index + 1}` : line.slice(0, separator);
+    const copyValue = separator < 0 ? line : line.slice(separator + 1);
+    const title = document.createElement('h3'); title.textContent = label;
+    const value = document.createElement('p'); value.className = 'text-line-value'; value.textContent = maskDecodedText(copyValue);
+    const reveal = document.createElement('button'); reveal.type = 'button'; reveal.textContent = 'Reveal'; reveal.setAttribute('aria-pressed', 'false');
+    let revealed = false;
+    reveal.addEventListener('click', () => {
+      if (!active) return;
+      revealed = !revealed;
+      value.textContent = revealed ? copyValue : maskDecodedText(copyValue);
+      reveal.textContent = revealed ? 'Hide' : 'Reveal';
+      reveal.setAttribute('aria-pressed', String(revealed));
+    });
+    const copy = document.createElement('button'); copy.type = 'button'; copy.textContent = separator < 0 ? 'Copy line' : 'Copy value';
+    const status = document.createElement('p'); status.className = 'note'; status.setAttribute('role', 'status');
+    copy.addEventListener('click', async () => {
+      if (!active) return;
+      try {
+        await navigator.clipboard.writeText(copyValue);
+        if (active) status.textContent = separator < 0 ? 'Line copied.' : 'Value copied.';
+      } catch {
+        if (active) status.textContent = 'Could not copy automatically. Select the line and copy it manually.';
+      }
+    });
+    const actions = document.createElement('div'); actions.className = 'actions'; actions.append(reveal, copy);
+    section.append(title, value, actions, status); container.appendChild(section);
+  });
+  container.hidden = count === 0;
+  return () => { active = false; container.replaceChildren(); container.hidden = true; };
+}
+
+function showTOTPCards(text, container) {
+  container.replaceChildren();
+  const entries = scanTOTPUris(text);
+  container.hidden = !entries.length;
+  let active = true, busy = false;
+  const cards = entries.map(entry => {
+    const section = document.createElement('section'); section.className = 'totp-card';
+    const title = document.createElement('h3'); title.textContent = entry.label;
+    const code = document.createElement('p'); code.className = 'totp-code'; code.textContent = entry.error ? 'Unavailable' : 'Computing…';
+    const info = document.createElement('p'); info.className = 'note';
+    info.textContent = entry.error ? `Line ${entry.line}: ${entry.error}` : `Line ${entry.line} · ${entry.algorithm} · ${entry.digits} digits · ${entry.period}s`;
+    const countdown = document.createElement('p'); countdown.className = 'note';
+    const copy = document.createElement('button'); copy.type = 'button';
+    const copyLabel = `Copy ${entry.digits || 6}-digit code`;
+    copy.textContent = copyLabel; copy.disabled = true;
+    const copyStatus = document.createElement('p'); copyStatus.className = 'note'; copyStatus.setAttribute('role', 'status');
+    const card = {entry, code, countdown, copy, copyStatus, counter:null};
+    copy.addEventListener('click', async () => {
+      if (!active || copy.disabled) return;
+      if (card.counter !== Math.floor(Date.now() / 1000 / entry.period)) {
+        copy.disabled = true; copyStatus.textContent = 'Code expired. Wait for the refreshed code.'; refresh(); return;
+      }
+      const value = code.textContent;
+      try {
+        await navigator.clipboard.writeText(value);
+        if (active) copyStatus.textContent = 'Code copied.';
+      } catch {
+        if (active) copyStatus.textContent = 'Could not copy automatically. Select the code and copy it manually.';
+      }
+    });
+    section.append(title, code, info, countdown, copy, copyStatus); container.appendChild(section);
+    return card;
+  });
+  async function refresh() {
+    if (!active || busy) return;
+    busy = true;
+    try {
+      await Promise.all(cards.map(async card => {
+        const {entry, code, countdown} = card;
+        if (entry.error) return;
+        const now = Date.now(), counter = Math.floor(now / 1000 / entry.period);
+        countdown.textContent = `Refreshes in ${entry.period - Math.floor(now / 1000) % entry.period}s`;
+        if (counter === card.counter) return;
+        code.textContent = 'Computing…'; card.copy.disabled = true; card.copyStatus.textContent = '';
+        try {
+          const value = await generateTOTP(entry.secret, entry.period, entry.digits, entry.algorithm, now);
+          if (!active || Math.floor(Date.now() / 1000 / entry.period) !== counter) return;
+          code.textContent = value; card.counter = counter; card.copy.disabled = false;
+        } catch { if (active) { code.textContent = 'Unavailable'; countdown.textContent = 'Unable to generate code. Check browser Web Crypto support.'; } }
+      }));
+    } finally { busy = false; }
+  }
+  refresh();
+  const timer = entries.some(entry => !entry.error) ? setInterval(refresh, 1000) : null;
+  return () => { active = false; if (timer !== null) clearInterval(timer); container.replaceChildren(); container.hidden = true; };
+}
+
+const input = document.getElementById('input');
+const output = document.getElementById('output');
+const file = document.getElementById('file');
+const status = document.getElementById('status');
+const download = document.getElementById('download');
+let revision = 0;
+function invalidate() {
+  revision++;
+  output.value = '';
+  document.getElementById('output-gutter').hidden = true;
+  document.getElementById('output-line-numbers').textContent = '';
+  document.getElementById('output-container').className = 'numbered-output';
+  download.disabled = true;
+  document.getElementById('copy-yeti').disabled = true;
+  document.getElementById('print').disabled = true;
+  document.getElementById('print-rows').textContent = '';
+  status.textContent = '';
+  status.className = '';
+}
+const textMode = document.getElementById('mode-text');
+const fileMode = document.getElementById('mode-file');
+const hexMode = document.getElementById('mode-hex');
+const hexInput = document.getElementById('hex-input');
+function updateMode() {
+  invalidate();
+  const useFile = fileMode.checked;
+  document.getElementById('file-panel').hidden = !useFile;
+  document.getElementById('text-panel').hidden = useFile || hexMode.checked;
+  document.getElementById('hex-panel').hidden = !hexMode.checked;
+  hexInput.disabled = !hexMode.checked;
+  file.disabled = !useFile;
+  input.disabled = useFile || hexMode.checked;
+}
+textMode.addEventListener('change', updateMode);
+fileMode.addEventListener('change', updateMode);
+hexMode.addEventListener('change', updateMode);
+hexInput.addEventListener('input', invalidate);
+output.addEventListener('scroll', () => {
+  document.getElementById('output-line-numbers').scrollTop = output.scrollTop;
+});
+input.addEventListener('input', invalidate);
+file.addEventListener('change', invalidate);
+document.getElementById('encrypt-enabled').addEventListener('change', () => {
+  invalidate();
+  document.getElementById('encrypt-options').hidden = !document.getElementById('encrypt-enabled').checked;
+});
+for (const id of ['encrypt-password', 'encrypt-confirm']) document.getElementById(id).addEventListener('input', invalidate);
+document.getElementById('converter').addEventListener('submit', async event => {
+  event.preventDefault();
+  invalidate();
+  const current = revision;
+  try {
+    const useFile = fileMode.checked;
+    const selected = useFile ? file.files[0] : null;
+    const text = input.value;
+    if (useFile && !selected) throw new Error('Select a file to encode.');
+    if (!useFile && !hexMode.checked && !text.length) throw new Error('Enter text to encode.');
+    const encrypting = document.getElementById('encrypt-enabled').checked;
+    const password = document.getElementById('encrypt-password').value;
+    if (encrypting && !password) throw new Error('Enter a password.');
+    if (encrypting && password !== document.getElementById('encrypt-confirm').value) throw new Error('Passwords do not match.');
+    status.textContent = encrypting ? 'Encrypting and encoding…' : 'Encoding…';
+    let bytes = selected ? new Uint8Array(await selected.arrayBuffer()) : hexMode.checked ? hexToBytes(hexInput.value) : new TextEncoder().encode(text);
+    if (revision !== current) return;
+    if (encrypting) bytes = await encryptBytes(password, bytes, selected ? selected.name : hexMode.checked ? 'hex.bin' : 'text.txt');
+    if (revision !== current) return;
+    const result = await encodeYeti(bytes, () => revision === current);
+    if (revision !== current) return;
+    output.value = result;
+    output.wrap = 'off';
+    output.scrollTop = 0;
+    document.getElementById('output-gutter').hidden = false;
+    document.getElementById('output-container').className = 'numbered-output has-numbers';
+    const lineNumbers = document.getElementById('output-line-numbers');
+    lineNumbers.textContent = result.split('\n').map((_, index) => index + 1).join('\n');
+    lineNumbers.scrollTop = 0;
+    download.disabled = false;
+    document.getElementById('copy-yeti').disabled = false;
+    document.getElementById('print').disabled = false;
+    status.className = 'success';
+    status.textContent = `Encoded ${bytes.length.toLocaleString()} bytes with row checksums and a final SHA-256 checksum.`;
+  } catch (error) {
+    if (revision === current) status.textContent = error.message;
+  }
+});
+document.getElementById('clear').addEventListener('click', () => {
+  invalidate(); input.value = ''; file.value = ''; hexInput.value = '';
+  document.getElementById('encrypt-password').value = ''; document.getElementById('encrypt-confirm').value = ''; (fileMode.checked ? file : hexMode.checked ? hexInput : input).focus();
+});
+function preparePrint() {
+  const container = document.getElementById('print-rows');
+  container.textContent = '';
+  const lines = output.value ? output.value.split('\n') : [];
+  // Read down the left column, then down the right, including the checksum.
+  const columnLength = Math.ceil(lines.length / 2);
+  for (let index = 0; index < columnLength; index++) {
+    const pair = document.createElement('tr');
+    for (let column = 0; column < 2; column++) {
+      const cell = document.createElement('td');
+      const rowIndex = index + column * columnLength;
+      if (rowIndex < lines.length) {
+        const row = document.createElement('div');
+        row.className = 'print-row';
+        const number = document.createElement('span');
+        number.className = 'line-number';
+        number.textContent = `${rowIndex + 1}.`;
+        const content = document.createElement('span');
+        content.className = 'row-words';
+        content.textContent = lines[rowIndex];
+        row.append(number, content);
+        cell.appendChild(row);
+      }
+      pair.appendChild(cell);
+    }
+    container.appendChild(pair);
+  }
+}
+window.addEventListener('beforeprint', preparePrint);
+document.getElementById('print').addEventListener('click', () => {
+  if (!output.value) return;
+  preparePrint();
+  window.print();
+});
+document.getElementById('copy-yeti').addEventListener('click', async () => {
+  if (!output.value) return;
+  const current = revision;
+  try {
+    await navigator.clipboard.writeText(output.value);
+    if (revision !== current) return;
+    status.className = 'success';
+    status.textContent = 'Yeti words copied.';
+  } catch {
+    if (revision !== current) return;
+    status.className = '';
+    status.textContent = 'Could not copy automatically. Select the Yeti words and copy them manually.';
+  }
+});
+download.addEventListener('click', () => {
+  if (!output.value) return;
+  const url = URL.createObjectURL(new Blob([output.value + '\n'], { type: 'text/plain;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url; link.download = 'yeti-record.txt';
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+window.addEventListener('DOMContentLoaded', () => {
+  const byId = id => document.getElementById(id);
+  const rows = [];
+  let decodeRevision = 0;
+  let clearTOTPCards = () => {};
+  let clearTextLineCards = () => {};
+  window.addEventListener('pagehide', () => { clearTOTPCards(); clearTextLineCards(); });
+  let recovered = null;
+  let decodedPlaintext = '';
+  let decodedHex = '';
+  let validUTF8 = true;
+  let decodedRevealed = false;
+  function renderDecodedText() {
+    const hex = byId('decoded-format').value === 'hex';
+    const display = hex ? decodedHex : decodedPlaintext;
+    byId('decoded-text-label').textContent = hex ? 'Recovered bytes (hex)' : 'Recovered text (UTF-8)';
+    byId('decoded-format-note').textContent = recovered && !validUTF8 && !hex ? 'These bytes are not valid UTF-8. Invalid sequences are shown as �; hex view preserves every byte.' : '';
+    byId('decoded-text').value = decodedRevealed ? display : maskDecodedText(display);
+    byId('reveal-decoded').textContent = decodedRevealed ? 'Hide decoded output' : 'Reveal decoded output';
+    byId('reveal-decoded').setAttribute('aria-pressed', String(decodedRevealed));
+  }
+  byId('decoded-format').addEventListener('change', renderDecodedText);
+  byId('reveal-decoded').addEventListener('click', () => {
+    decodedRevealed = !decodedRevealed;
+    renderDecodedText();
+  });
+  let recoveredFilename = 'recovered.bin';
+  function resetResult() {
+    clearTOTPCards();
+    clearTextLineCards();
+    decodeRevision++;
+    recovered = null;
+    recoveredFilename = 'recovered.bin';
+    decodedPlaintext = '';
+    decodedHex = '';
+    validUTF8 = true;
+    byId('decoded-format').value = 'utf8';
+    byId('decoded-format').disabled = true;
+    decodedRevealed = false;
+    renderDecodedText();
+    byId('download-decoded').disabled = true;
+    byId('decode-status').textContent = '';
+    byId('decode-status').className = '';
+  }
+  byId('decrypt-enabled').addEventListener('change', () => {
+    resetResult(); byId('decrypt-options').hidden = !byId('decrypt-enabled').checked;
+  });
+  byId('decrypt-password').addEventListener('input', resetResult);
+  function edited() {
+    resetResult();
+    rows.forEach((row, i) => {
+      row.number.textContent = `${i + 1}.`;
+      row.input.setAttribute('aria-label', `Row ${i + 1}${i === rows.length - 1 ? ', final checksum' : ''}`);
+      row.feedback.textContent = '';
+      row.input.setAttribute('aria-invalid', 'false');
+    });
+  }
+  async function validate() {
+    resetResult();
+    const current = decodeRevision;
+    let valid = true;
+    rows.forEach((row, i) => {
+      row.number.textContent = `${i + 1}.`;
+      row.input.setAttribute('aria-label', `Row ${i + 1}${i === rows.length - 1 ? ', final checksum' : ''}`);
+      const check = inspectYetiRow(row.input.value, i, rows.length);
+      row.feedback.textContent = check.error || check.warning || '';
+      row.feedback.className = 'row-feedback' + (check.warning ? ' warning' : '');
+      row.input.setAttribute('aria-invalid', String(Boolean(check.error || check.warning)));
+      if (check.error || check.warning) valid = false;
+    });
+    if (valid) {
+      try {
+        await decodeYeti(rows.map(row => row.input.value));
+        if (current === decodeRevision) {
+          byId('decode-status').textContent = 'All row checksums and the final checksum match.';
+          byId('decode-status').className = 'success';
+        }
+      } catch (error) {
+        if (current === decodeRevision) {
+          rows.at(-1).feedback.textContent = error.message;
+          rows.at(-1).feedback.className = 'row-feedback warning';
+        }
+      }
+    }
+  }
+  function tokenAt(input) {
+    const caret = input.selectionStart ?? input.value.length;
+    const start = input.value.slice(0, caret).search(/\S*$/);
+    const tail = input.value.slice(caret).match(/^\S*/)[0];
+    return {start, end: caret + tail.length, token: input.value.slice(start, caret)};
+  }
+  function closeSuggestions(row) {
+    row.suggestions.replaceChildren();
+    row.activeSuggestion = -1;
+    row.input.setAttribute('aria-expanded', 'false');
+    row.input.removeAttribute('aria-activedescendant');
+  }
+  function selectSuggestion(row, index) {
+    const options = Array.from(row.suggestions.children);
+    row.activeSuggestion = (index + options.length) % options.length;
+    options.forEach((option, i) => option.setAttribute('aria-selected', String(i === row.activeSuggestion)));
+    row.input.setAttribute('aria-activedescendant', options[row.activeSuggestion].id);
+  }
+  function suggestions(row) {
+    rows.forEach(closeSuggestions);
+    if (document.activeElement !== row.input) return;
+    const {start, end, token} = tokenAt(row.input);
+    for (const word of suggestWords(token, row === rows.at(-1))) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = word;
+      button.id = `${row.suggestions.id}-${row.suggestions.children.length}`;
+      button.setAttribute('role', 'option'); button.setAttribute('aria-selected', 'false');
+      button.tabIndex = -1;
+      button.addEventListener('mousedown', event => event.preventDefault());
+      button.addEventListener('click', () => {
+        row.input.value = row.input.value.slice(0, start) + word + ' ' + row.input.value.slice(end).replace(/^\s+/, '');
+        row.input.focus();
+        row.input.setSelectionRange(start + word.length + 1, start + word.length + 1);
+        closeSuggestions(row); edited();
+      });
+      row.suggestions.appendChild(button);
+    }
+    row.input.setAttribute('aria-expanded', String(row.suggestions.children.length > 0));
+  }
+  function addRow(value = '', index = rows.length) {
+    const row = {};
+    row.element = document.createElement('div'); row.element.className = 'decode-row';
+    const entry = document.createElement('div'); entry.className = 'decode-entry';
+    row.number = document.createElement('span'); row.number.className = 'decode-number';
+    row.input = document.createElement('input'); row.input.type = 'text'; row.input.value = value;
+    row.input.autocomplete = 'off'; row.input.spellcheck = false; row.input.setAttribute('autocapitalize', 'off');
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove';
+    remove.addEventListener('click', () => {
+      if (rows.length === 1) { row.input.value = ''; } else {
+        rows.splice(rows.indexOf(row), 1); row.element.remove();
+      }
+      rows.forEach(closeSuggestions); edited();
+    });
+    entry.append(row.number, row.input, remove);
+    row.suggestions = document.createElement('div'); row.suggestions.className = 'suggestions';
+    row.feedback = document.createElement('div'); row.feedback.className = 'row-feedback';
+    row.feedback.id = 'feedback-' + nextRowId++;
+    row.suggestions.id = 'suggestions-' + nextRowId;
+    row.suggestions.setAttribute('role', 'listbox');
+    row.suggestions.setAttribute('aria-label', 'Word suggestions');
+    row.input.setAttribute('role', 'combobox');
+    row.input.setAttribute('aria-autocomplete', 'list');
+    row.input.setAttribute('aria-controls', row.suggestions.id);
+    row.input.setAttribute('aria-expanded', 'false');
+    row.activeSuggestion = -1;
+    row.input.setAttribute('aria-describedby', row.feedback.id);
+    row.element.append(entry, row.suggestions, row.feedback);
+    byId('decode-rows').insertBefore(row.element, rows[index]?.element || null);
+    rows.splice(index, 0, row);
+    row.input.addEventListener('input', () => { edited(); suggestions(row); });
+    row.input.addEventListener('focus', () => suggestions(row));
+    row.input.addEventListener('click', () => suggestions(row));
+    row.input.addEventListener('blur', () => { closeSuggestions(row); validate(); });
+    row.input.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { closeSuggestions(row); return; }
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        if (!row.suggestions.children.length) suggestions(row);
+        if (row.suggestions.children.length) {
+          event.preventDefault();
+          selectSuggestion(row, row.activeSuggestion < 0 ? (event.key === 'ArrowDown' ? 0 : row.suggestions.children.length - 1) : row.activeSuggestion + (event.key === 'ArrowDown' ? 1 : -1));
+        }
+        return;
+      }
+      if ((event.key === 'Enter' || event.key === 'Tab') && !event.shiftKey && row.suggestions.children.length) {
+        event.preventDefault();
+        row.suggestions.children[Math.max(0, row.activeSuggestion)].click();
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const next = rows[rows.indexOf(row) + 1] || addRow();
+        closeSuggestions(row); edited(); next.input.focus();
+      }
+    });
+    row.input.addEventListener('paste', event => {
+      const text = event.clipboardData.getData('text/plain');
+      if (!/[\r\n]/.test(text)) return;
+      event.preventDefault();
+      const lines = text.trim().split(/\r\n|\r|\n/);
+      const index = rows.indexOf(row);
+      while (rows.length > index + 1 && !rows.at(-1).input.value.trim()) rows.pop().element.remove();
+      row.input.value = lines[0];
+      lines.slice(1).forEach((line, i) => addRow(line, index + i + 1));
+      closeSuggestions(row); edited();
+    });
+    return row;
+  }
+  let nextRowId = 0;
+  function initialRows() {
+    addRow(); addRow();
+    rows.forEach((row, i) => {
+      row.number.textContent = `${i + 1}.`;
+      row.input.setAttribute('aria-label', i ? 'Row 2, final checksum' : 'Row 1');
+    });
+  }
+  initialRows();
+  byId('add-row').addEventListener('click', () => { const row = addRow(); edited(); row.input.focus(); });
+  byId('clear-decode').addEventListener('click', () => {
+    byId('decrypt-password').value = '';
+    rows.splice(0); byId('decode-rows').replaceChildren(); resetResult();
+    initialRows(); rows[0].input.focus();
+  });
+  for (const mode of ['operation-encode', 'operation-decode']) byId(mode).addEventListener('change', () => {
+    invalidate(); resetResult();
+    const decoding = byId('operation-decode').checked;
+    byId('encoding-panel').hidden = decoding;
+    byId('decoding-panel').hidden = !decoding;
+  });
+  byId('decode-button').addEventListener('click', async () => {
+    await validate();
+    const current = decodeRevision;
+    try {
+      const decrypting = byId('decrypt-enabled').checked;
+      const password = byId('decrypt-password').value;
+      let bytes = await decodeYeti(rows.map(row => row.input.value));
+      if (current !== decodeRevision) return;
+      if (decrypting) {
+        byId('decode-status').textContent = 'Decrypting…';
+        const result = await decryptBytes(password, bytes);
+        if (current !== decodeRevision) return;
+        bytes = result.bytes; recoveredFilename = safeFilename(result.filename);
+      } else if (bytes[0] === 87 && bytes[1] === 69 && bytes[2] === 78 && bytes[3] === 67) {
+        recoveredFilename = 'recovered.wec';
+      }
+      recovered = bytes;
+      byId('decode-status').className = 'success';
+      byId('download-decoded').disabled = false;
+      decodedHex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+      try {
+        decodedPlaintext = new TextDecoder('utf-8', {fatal:true, ignoreBOM:true}).decode(bytes);
+        validUTF8 = true;
+      } catch {
+        decodedPlaintext = new TextDecoder('utf-8', {ignoreBOM:true}).decode(bytes);
+        validUTF8 = false;
+      }
+      byId('decoded-format').value = validUTF8 ? 'utf8' : 'hex';
+      byId('decoded-format').disabled = false;
+      decodedRevealed = false;
+      renderDecodedText();
+      if (validUTF8) {
+        clearTOTPCards = showTOTPCards(decodedPlaintext, byId('totp-cards'));
+        clearTextLineCards = showTextLineCards(decodedPlaintext, byId('text-line-cards'));
+      }
+      byId('decode-status').textContent = `Recovered ${bytes.length} bytes. All checksums match.`;
+
+    } catch (error) { if (current === decodeRevision) { byId('decode-status').className = ''; byId('decode-status').textContent = error.message; } }
+  });
+  byId('download-decoded').addEventListener('click', () => {
+    if (!recovered) return;
+    const url = URL.createObjectURL(new Blob([recovered], {type:'application/octet-stream'}));
+    const link = document.createElement('a'); link.href = url; link.download = recoveredFilename;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+});
+
+</script>
+</body>
+</html>

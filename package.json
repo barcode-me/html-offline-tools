@@ -1,0 +1,26 @@
+{
+  "name": "html-offline-tools",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "secure-file-encryption": "./secure-file-encryption.js"
+  },
+  "description": "A few helpful tools that you can run in a browser by opening a stand alone HTML file locally. It does not request any resources over the network and it is built with vanilla JS, HTML, CSS. Except for a QR code library that is embedded in the files. Some features such as Scanning QR codes only work in chromium browsers and in some OSs like macOS, but the tool can still be used without the scan QR feature.",
+  "main": "secure-file-encryption.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/barcode-me/html-offline-tools.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/barcode-me/html-offline-tools/issues"
+  },
+  "homepage": "https://github.com/barcode-me/html-offline-tools#readme"
+}

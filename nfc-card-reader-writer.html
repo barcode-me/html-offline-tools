@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NFC Card Reader &amp; Writer</title>
+<style>
+:root {
+  color-scheme: dark;
+  --background: #090b0a;
+  --surface: #141816;
+  --surface-raised: #1a201d;
+  --border: #303832;
+  --text: #f2f4ef;
+  --muted: #a7b0a9;
+  --accent: #f2a900;
+  --accent-hover: #ffbd2e;
+  --error: #ff8c82;
+  --success: #89d99d;
+}
+* { box-sizing: border-box; }
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 32px 18px;
+  color: var(--text);
+  background: radial-gradient(circle at 50% 0%, #f2a90018, transparent 34rem), var(--background);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+main { width: min(820px, 100%); margin: 0 auto; }
+header { margin: 30px 0 28px; }
+.eyebrow { margin: 0 0 10px; color: var(--accent); font-size: .76rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+h1 { margin: 0; font-size: clamp(2rem, 7vw, 3.7rem); line-height: 1; letter-spacing: -.055em; }
+h2 { margin-top: 0; font-size: 1.2rem; }
+p { color: var(--muted); line-height: 1.6; }
+.intro { max-width: 650px; margin: 16px 0 0; line-height: 1.65; }
+.card { padding: clamp(20px, 4vw, 34px); margin: 24px 0; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+form.card { box-shadow: 0 24px 80px #00000047; }
+fieldset { min-width: 0; border: 0; padding: 0; margin: 0 0 24px; }
+#controls { margin-bottom: 0; }
+legend, .label { display: block; margin-bottom: 10px; font-weight: 700; }
+.choices { display: flex; gap: 24px; flex-wrap: wrap; }
+.choices label, .show { display: inline-flex; align-items: center; gap: 8px; }
+input { max-width: 100%; }
+input[type=radio], input[type=checkbox] { accent-color: var(--accent); }
+input[type=password], input[type=text], textarea {
+  display: block; width: 100%; padding: 14px 15px; border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); background: #0e110f; font: inherit;
+}
+textarea { min-height: 170px; resize: vertical; overflow-wrap: anywhere; font: .88rem/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+input[type=file] { width: 100%; color: var(--muted); font: .9rem system-ui, sans-serif; }
+button, .download, input::file-selector-button {
+  display: inline-block; min-height: 46px; padding: 12px 18px; border: 1px solid var(--border); border-radius: 9px;
+  color: var(--text); background: var(--surface-raised); font: inherit; font-size: .9rem; font-weight: 750;
+  cursor: pointer; text-decoration: none; overflow-wrap: anywhere;
+}
+input::file-selector-button { margin-right: 12px; }
+button:hover, .download:hover, input::file-selector-button:hover { border-color: #4a554e; }
+button[type=submit], .download { color: #17130a; background: var(--accent); border-color: transparent; }
+button[type=submit]:hover, .download:hover { background: var(--accent-hover); }
+button[type=submit] { flex: 1; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.password { margin-top: 24px; }
+.show { margin-top: 12px; color: var(--muted); font-size: .9rem; }
+.muted { font-size: .85rem; }
+#status { white-space: pre-wrap; color: var(--error); font-size: .9rem; }
+#status.success { color: var(--success); }
+[hidden] { display: none !important; }
+summary { cursor: pointer; font-weight: 700; }
+table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+td, th { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+code { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+#write-panel { margin-top: 24px; }
+#write-panel .label:not(:first-child) { margin-top: 24px; }
+small { display: block; margin-top: 10px; color: var(--muted); line-height: 1.6; }
+#password-panel { margin-top: 20px; }
+#status { color: var(--muted); }
+.record { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 16px; }
+.record h3 { font-size: 1rem; overflow-wrap: anywhere; }
+.record p { overflow-wrap: anywhere; }
+a { color: var(--accent); }
+.setup-guide h3 { margin: 24px 0 8px; font-size: 1rem; }
+.setup-guide pre { padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: #0e110f; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.setup-guide a { overflow-wrap: anywhere; }
+.compatibility-alert { display: flex; align-items: flex-start; gap: 14px; margin: 24px 0; padding: 20px; border: 1px solid var(--accent); border-left: 5px solid var(--accent); border-radius: 12px; background: #f2a90014; }
+.compatibility-alert .alert-icon { flex: 0 0 auto; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #17130a; font-weight: 800; }
+.compatibility-alert h2 { margin: 0 0 8px; color: var(--accent); font-size: 1.1rem; line-height: 1.4; }
+.compatibility-alert p { margin: 0; color: var(--text); font-size: .95rem; }
+.compatibility-alert p + p { margin-top: 8px; color: var(--muted); font-size: .85rem; }
+.nfc-dialog { width: min(440px, calc(100% - 32px)); padding: 28px; border: 1px solid var(--accent); border-radius: 18px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px #0008; }
+.nfc-dialog::backdrop { background: #000b; }
+.nfc-dialog h2 { color: var(--accent); }
+#nfc-success-title { color: var(--success); }
+#nfc-error-message { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--error); }
+#result { scroll-margin-top: 24px; }
+
+/* Shared offline-tools navigation; embedded to keep every page standalone. */
+.tools-menu { margin: 0 0 24px; padding: 0; border: 1px solid #303832; border-radius: 12px; background: #141816; color: #f2f4ef; }
+.tools-menu > summary { padding: 14px 18px; color: #f2a900; cursor: pointer; font: 700 .9rem/1.5 system-ui, sans-serif; }
+.tools-menu > summary:focus-visible, .tools-menu a:focus-visible { outline: 2px solid #f2a900; outline-offset: 3px; }
+.tools-menu nav { display: block; margin: 0; padding: 0 12px 12px; border: 0; background: transparent; }
+.tools-menu ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.tools-menu li { margin: 0; padding: 0; }
+.tools-menu a { display: block; padding: 10px 12px; border: 1px solid transparent; border-radius: 8px; color: #f2f4ef; font: 500 .88rem/1.5 system-ui, sans-serif; text-decoration: none; overflow-wrap: anywhere; }
+.tools-menu a:hover { background: #1a201d; border-color: #4a554e; }
+.tools-menu a[aria-current="page"] { color: #f2a900; background: #f2a90014; border-color: #f2a90055; }
+.totp-card { padding: 18px; margin-top: 16px; border: 1px solid var(--border); border-radius: 10px; background: #0e110f; overflow-wrap: anywhere; }
+.totp-card h3 { margin: 0; font-size: 1rem; }
+.text-line-value { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); font: .88rem/1.6 ui-monospace, monospace; }
+.totp-code { margin: 12px 0; color: var(--accent); font: 700 clamp(1.5rem, 6vw, 2.4rem)/1.4 ui-monospace, monospace; letter-spacing: .08em; }
+.totp-card .note { font-size: .85rem; }
+</style>
+</head>
+<body><main>
+<details class="tools-menu">
+  <summary>Tools menu</summary>
+  <nav aria-label="Offline tools">
+    <ul>
+      <li><a href="./diceware-passphrase.html">Diceware passphrases</a></li>
+      <li><a href="./bip39-seed-generator.html">BIP39 seed generator</a></li>
+      <li><a href="./yeti-encoder-decoder.html">Yeti encoder / decoder</a></li>
+      <li><a href="./qr-file-transfer.html">QR file transfer</a></li>
+      <li><a href="./nfc-card-reader-writer.html" aria-current="page">NFC card reader / writer</a></li>
+      <li><a href="./secure-file-encryption.html">Secure file encryption</a></li>
+      <li><a href="./password-manager.html">Passwords and TOTP</a></li>
+      <li><a href="./one-time-pad-encryption.html">One-time pad encryption</a></li>
+      <li><a href="./seed-one-time-pad-encryption.html">Seed one-time pad encryption</a></li>
+    </ul>
+  </nav>
+</details>
+
+<header>
+<p class="eyebrow">Offline tools</p>
+<h1>NFC card reader &amp; writer</h1>
+<p class="intro">Read or write text and binary data on NDEF-compatible NFC cards and tags. Processing stays in this page; nothing is uploaded or saved by the app.</p>
+</header>
+<aside id="support" class="compatibility-alert" aria-labelledby="compatibility-title">
+<span class="alert-icon" aria-hidden="true">!</span>
+<div><h2 id="compatibility-title">Android phone required for NFC</h2>
+<p>Use <strong>Chrome on an NFC-enabled Android phone</strong> and open this page over <strong>HTTPS or localhost</strong> for both reading and writing. Desktop browsers and iPhone/iPad browsers are not supported.</p>
+<p>Turn on NFC, keep your phone unlocked, and keep this page visible. Only NDEF-compatible cards and tags are supported.</p></div>
+</aside>
+<details class="card setup-guide">
+<summary>How to open this page over HTTPS or locally on Android</summary>
+<h3>Option 1: GitHub Pages (HTTPS)</h3>
+<p>Open the <a href="https://barcode-me.github.io/html-offline-tools/nfc-card-reader-writer.html" target="_blank" rel="noopener noreferrer">hosted NFC page on GitHub Pages</a> in Chrome on your Android phone.</p>
+<h3>Option 2: Termux (local, no HTTPS certificate needed)</h3>
+<p>Install <a href="https://termux.dev/en/" target="_blank" rel="noopener noreferrer">Termux</a> on your Android phone and save <code>nfc-card-reader-writer.html</code> in the phone’s Download folder. Run these commands in Termux, granting storage access when prompted:</p>
+<pre><code>pkg install python
+termux-setup-storage
+cd ~/storage/downloads
+python -m http.server 8000 --bind 127.0.0.1</code></pre>
+<p>Leave the server running, switch to Chrome on the same phone, and open <a href="http://localhost:8000/nfc-card-reader-writer.html" target="_blank" rel="noopener noreferrer">http://localhost:8000/nfc-card-reader-writer.html</a>.</p>
+<p>Browsers treat localhost as a secure context even over HTTP. After installing Termux and Python and saving the HTML file, this approach works without an internet connection. Keep NFC enabled. To stop the server, press Ctrl+C in Termux.</p>
+</details>
+<form id="form" class="card">
+<fieldset id="controls"><legend>Card operation</legend>
+<div class="choices"><label><input type="radio" name="mode" id="read" checked> Read</label>
+<label><input type="radio" name="mode" id="write"> Write</label></div>
+<div id="write-panel" hidden>
+<fieldset><legend>Input format</legend><div class="choices">
+<label><input type="radio" name="encoding" id="encoding-text" value="text" checked> Plain text (UTF-8)</label>
+<label><input type="radio" name="encoding" id="encoding-hex" value="hex"> Hexadecimal bytes</label>
+</div></fieldset>
+<label class="label" for="input">Content to write</label><textarea id="input" spellcheck="false" placeholder="Enter text or hexadecimal byte pairs"></textarea>
+<small>Hex accepts pairs such as 00 FF 80 or 00ff80. Spaces and line breaks are ignored. Text whitespace is preserved.</small>
+<p id="size"></p>
+<label class="show"><input type="checkbox" id="read-only"> Make card permanently read-only after writing</label>
+<p class="muted">This cannot be undone. The content can still be read, but cannot be changed or erased. Keep the same card against your phone until writing and locking finish.</p>
+<p>Writing replaces the tag’s existing NDEF message. The tag must be writable and have enough space for the payload plus NDEF overhead.</p>
+</div>
+<label class="show"><input type="checkbox" id="encrypted"> <span id="crypto-label">Decrypt with a password</span></label>
+<div id="password-panel" hidden><label class="label" for="password">Password</label><input type="password" id="password" autocomplete="off">
+<p>Uses the same WENC v2 format as secure-file-encryption.html: AES-256-GCM and PBKDF2-SHA-256, 600,000 iterations.</p></div>
+</fieldset>
+<div class="actions">
+<button id="start" type="submit">Read card</button>
+<button id="cancel" type="button" class="secondary" disabled>Cancel</button>
+<button id="clear" type="button" class="secondary">Clear</button>
+</div>
+</form>
+<p id="status" role="status" aria-live="polite">Ready.</p>
+<section id="result" class="card" tabindex="-1" hidden><h2>Card contents</h2><p>Plain-text records are scanned one line at a time: use Label:password for passwords or otpauth://totp/ URIs for live codes. Passwords and full decoded text start hidden. Codes use your device clock. Binary records remain hexadecimal.</p><div id="records"></div></section>
+</main>
+<dialog id="nfc-dialog" class="nfc-dialog" aria-labelledby="nfc-dialog-title" aria-describedby="nfc-dialog-help">
+<h2 id="nfc-dialog-title">Approach the NFC card or tag</h2>
+<p id="nfc-dialog-help">Hold the back of your phone close to the NFC card or tag. Keep it there until the operation finishes.</p>
+<p id="nfc-dialog-status" role="status" aria-live="polite"></p>
+<button id="nfc-dialog-cancel" type="button" autofocus>Cancel</button>
+</dialog>
+<dialog id="nfc-success-dialog" class="nfc-dialog" aria-labelledby="nfc-success-title" aria-describedby="nfc-success-message">
+<h2 id="nfc-success-title">Card written successfully</h2>
+<p id="nfc-success-message"></p>
+<p>You can move the card away from your phone now.</p>
+<button id="nfc-success-close" type="button" autofocus>Done</button>
+</dialog>
+<dialog id="nfc-error-dialog" class="nfc-dialog" aria-labelledby="nfc-error-title" aria-describedby="nfc-error-message">
+<h2 id="nfc-error-title">NFC operation failed</h2>
+<p id="nfc-error-message"></p>
+<p>Use Chrome on an NFC-enabled Android phone over HTTPS or localhost. Check that NFC is enabled and browser permission is allowed.</p>
+<button id="nfc-error-close" type="button" autofocus>Close</button>
+</dialog>
+<script>
+
+'use strict';
+const FORMAT = Object.freeze({version:2, iterations:600000, salt:16, iv:32, data:44});
+const utf8 = new TextEncoder();
+function strictText(bytes) { return new TextDecoder('utf-8', {fatal:true, ignoreBOM:true}).decode(bytes); }
+async function deriveKey(password, salt) {
+  if (!password) throw new Error('Enter a password.');
+  const material = await crypto.subtle.importKey('raw', utf8.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:FORMAT.iterations, hash:'SHA-256'}, material, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+}
+function parseHeader(bytes) {
+  if (bytes.length < 62) throw new Error('Invalid or truncated binary encrypted file. Original JSON files are not supported.');
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes[0]!==87 || bytes[1]!==69 || bytes[2]!==78 || bytes[3]!==67) throw new Error('Not a WENC binary file. Original JSON files are not supported.');
+  if (bytes[4]!==2) throw new Error('Unsupported version. Only binary version 2 is supported.');
+  if (bytes[5]!==1 || view.getUint16(6,true)!==16 || view.getUint16(8,true)!==32 || view.getUint16(10,true)!==44 || view.getUint32(12,true)!==600000) throw new Error('Unsupported or damaged encryption header.');
+  return {salt:bytes.subarray(16,32), iv:bytes.subarray(32,44), header:bytes.subarray(0,44), ciphertext:bytes.subarray(44)};
+}
+async function encryptBytes(password, bytes, filename='text.txt') {
+  const name = utf8.encode(filename);
+  if (name.length > 65535) throw new Error('Filename is too long.');
+  const header = new Uint8Array(44);
+  header.set([87,69,78,67,2,1]);
+  const view = new DataView(header.buffer);
+  view.setUint16(6,16,true); view.setUint16(8,32,true); view.setUint16(10,44,true); view.setUint32(12,600000,true);
+  crypto.getRandomValues(header.subarray(16,32)); crypto.getRandomValues(header.subarray(32,44));
+  const payload = new Uint8Array(2+name.length+bytes.length);
+  new DataView(payload.buffer).setUint16(0,name.length,true); payload.set(name,2); payload.set(bytes,2+name.length);
+  try {
+    const key = await deriveKey(password, header.subarray(16,32));
+    const ciphertext = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv:header.subarray(32,44), additionalData:header, tagLength:128},key,payload));
+    const output = new Uint8Array(header.length+ciphertext.length); output.set(header); output.set(ciphertext,header.length); return output;
+  } finally { payload.fill(0); }
+}
+async function decryptBytes(password, bytes) {
+  const parsed = parseHeader(bytes);
+  const key = await deriveKey(password, parsed.salt);
+  let payload;
+  try { payload = new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:parsed.iv,additionalData:parsed.header,tagLength:128},key,parsed.ciphertext)); }
+  catch { throw new Error('Incorrect password or damaged encrypted file.'); }
+  if (payload.length < 2) throw new Error('Invalid encrypted payload.');
+  const length = new DataView(payload.buffer).getUint16(0,true);
+  if (length > payload.length-2) throw new Error('Invalid encrypted filename length.');
+  const filename = strictText(payload.subarray(2,2+length));
+  return {filename, bytes:payload.subarray(2+length)};
+}
+
+function decodeBase32Secret(secret) {
+  const value = secret.toUpperCase().replace(/=+$/, '');
+  if (!value || !/^[A-Z2-7]+$/.test(value)) throw new Error('Invalid Base32 secret.');
+  let bits = '';
+  for (const char of value) bits += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'.indexOf(char).toString(2).padStart(5, '0');
+  const bytes = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) bytes.push(parseInt(bits.slice(i, i + 8), 2));
+  if (!bytes.length) throw new Error('Secret is too short.');
+  return new Uint8Array(bytes);
+}
+function normalizeTOTPAlgorithm(algorithm) {
+  const normalized = algorithm.toUpperCase().replace(/^SHA-?/, 'SHA-');
+  if (!['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'].includes(normalized)) throw new Error('Unsupported TOTP algorithm.');
+  return normalized;
+}
+async function generateTOTP(base32Secret, interval = 30, length = 6, algorithm = 'SHA-1', now = Date.now()) {
+  if (!Number.isSafeInteger(interval) || interval < 1) throw new Error('Period must be a positive integer.');
+  if (!Number.isInteger(length) || length < 1 || length > 10) throw new Error('Digits must be an integer from 1 to 10.');
+  algorithm = normalizeTOTPAlgorithm(algorithm);
+  const decodedSecret = decodeBase32Secret(base32Secret);
+  const timeCounter = Math.floor(now / 1000 / interval);
+  if (!Number.isSafeInteger(timeCounter) || timeCounter < 0) throw new Error('Invalid system time.');
+  const timeBuffer = new ArrayBuffer(8);
+  new DataView(timeBuffer).setBigUint64(0, BigInt(timeCounter), false);
+  const key = await crypto.subtle.importKey('raw', decodedSecret, {name:'HMAC', hash:algorithm}, false, ['sign']);
+  const hmac = new Uint8Array(await crypto.subtle.sign('HMAC', key, timeBuffer));
+  const offset = hmac[hmac.length - 1] & 0x0f;
+  const binaryCode = new DataView(hmac.buffer).getUint32(offset, false) & 0x7fffffff;
+  return String(binaryCode % 10 ** length).padStart(length, '0');
+}
+function scanTOTPUris(text) {
+  const results = [];
+  text.split(/\r\n|\r|\n/).forEach((line, index) => {
+    const value = line.trim();
+    if (!/^otpauth:\/\/totp(?:\/|\?|$)/i.test(value)) return;
+    const entry = {line:index + 1, label:`TOTP on line ${index + 1}`};
+    try {
+      const uri = new URL(value);
+      const label = decodeURIComponent(uri.pathname.slice(1));
+      const colon = label.indexOf(':');
+      const labelIssuer = colon < 0 ? '' : label.slice(0, colon).trim();
+      const account = (colon < 0 ? label : label.slice(colon + 1)).trim();
+      const issuer = uri.searchParams.get('issuer')?.trim() || labelIssuer;
+      entry.label = [issuer, account].filter(Boolean).join(' · ') || entry.label;
+      if (uri.username || uri.password || uri.port || uri.hash) throw new Error('Invalid TOTP URI.');
+      for (const name of ['secret','issuer','algorithm','digits','period']) {
+        if (uri.searchParams.getAll(name).length > 1) throw new Error(`Duplicate ${name} parameter.`);
+      }
+      entry.secret = uri.searchParams.get('secret') || '';
+      decodeBase32Secret(entry.secret);
+      entry.algorithm = normalizeTOTPAlgorithm(uri.searchParams.get('algorithm') ?? 'SHA1');
+      function integer(name, fallback, max) {
+        const raw = uri.searchParams.get(name) ?? String(fallback);
+        const number = Number(raw);
+        if (!/^\d+$/.test(raw) || !Number.isSafeInteger(number) || number < 1 || number > max) throw new Error(`Invalid ${name} parameter.`);
+        return number;
+      }
+      entry.digits = integer('digits', 6, 10);
+      entry.period = integer('period', 30, Number.MAX_SAFE_INTEGER);
+    } catch (error) { entry.error = error.message; }
+    results.push(entry);
+  });
+  return results;
+}
+function maskDecodedText(text) { return text.replace(/[^\r\n]/gu, '*'); }
+function showTextLineCards(text, container) {
+  container.replaceChildren();
+  let active = true;
+  let count = 0;
+  text.split(/\r\n|\r|\n/).forEach((line, index) => {
+    if (!line.trim() || /^otpauth:\/\/totp(?:\/|\?|$)/i.test(line.trim())) return;
+    count++;
+    const section = document.createElement('section'); section.className = 'totp-card';
+    const separator = line.indexOf(':');
+    const label = separator < 0 ? `Line ${index + 1}` : line.slice(0, separator);
+    const copyValue = separator < 0 ? line : line.slice(separator + 1);
+    const title = document.createElement('h3'); title.textContent = label;
+    const value = document.createElement('p'); value.className = 'text-line-value'; value.textContent = maskDecodedText(copyValue);
+    const reveal = document.createElement('button'); reveal.type = 'button'; reveal.textContent = 'Reveal'; reveal.setAttribute('aria-pressed', 'false');
+    let revealed = false;
+    reveal.addEventListener('click', () => {
+      if (!active) return;
+      revealed = !revealed;
+      value.textContent = revealed ? copyValue : maskDecodedText(copyValue);
+      reveal.textContent = revealed ? 'Hide' : 'Reveal';
+      reveal.setAttribute('aria-pressed', String(revealed));
+    });
+    const copy = document.createElement('button'); copy.type = 'button'; copy.textContent = separator < 0 ? 'Copy line' : 'Copy value';
+    const status = document.createElement('p'); status.className = 'note'; status.setAttribute('role', 'status');
+    copy.addEventListener('click', async () => {
+      if (!active) return;
+      try {
+        await navigator.clipboard.writeText(copyValue);
+        if (active) status.textContent = separator < 0 ? 'Line copied.' : 'Value copied.';
+      } catch {
+        if (active) status.textContent = 'Could not copy automatically. Select the line and copy it manually.';
+      }
+    });
+    const actions = document.createElement('div'); actions.className = 'actions'; actions.append(reveal, copy);
+    section.append(title, value, actions, status); container.appendChild(section);
+  });
+  container.hidden = count === 0;
+  return () => { active = false; container.replaceChildren(); container.hidden = true; };
+}
+
+function showTOTPCards(text, container) {
+  container.replaceChildren();
+  const entries = scanTOTPUris(text);
+  container.hidden = !entries.length;
+  let active = true, busy = false;
+  const cards = entries.map(entry => {
+    const section = document.createElement('section'); section.className = 'totp-card';
+    const title = document.createElement('h3'); title.textContent = entry.label;
+    const code = document.createElement('p'); code.className = 'totp-code'; code.textContent = entry.error ? 'Unavailable' : 'Computing…';
+    const info = document.createElement('p'); info.className = 'note';
+    info.textContent = entry.error ? `Line ${entry.line}: ${entry.error}` : `Line ${entry.line} · ${entry.algorithm} · ${entry.digits} digits · ${entry.period}s`;
+    const countdown = document.createElement('p'); countdown.className = 'note';
+    const copy = document.createElement('button'); copy.type = 'button';
+    const copyLabel = `Copy ${entry.digits || 6}-digit code`;
+    copy.textContent = copyLabel; copy.disabled = true;
+    const copyStatus = document.createElement('p'); copyStatus.className = 'note'; copyStatus.setAttribute('role', 'status');
+    const card = {entry, code, countdown, copy, copyStatus, counter:null};
+    copy.addEventListener('click', async () => {
+      if (!active || copy.disabled) return;
+      if (card.counter !== Math.floor(Date.now() / 1000 / entry.period)) {
+        copy.disabled = true; copyStatus.textContent = 'Code expired. Wait for the refreshed code.'; refresh(); return;
+      }
+      const value = code.textContent;
+      try {
+        await navigator.clipboard.writeText(value);
+        if (active) copyStatus.textContent = 'Code copied.';
+      } catch {
+        if (active) copyStatus.textContent = 'Could not copy automatically. Select the code and copy it manually.';
+      }
+    });
+    section.append(title, code, info, countdown, copy, copyStatus); container.appendChild(section);
+    return card;
+  });
+  async function refresh() {
+    if (!active || busy) return;
+    busy = true;
+    try {
+      await Promise.all(cards.map(async card => {
+        const {entry, code, countdown} = card;
+        if (entry.error) return;
+        const now = Date.now(), counter = Math.floor(now / 1000 / entry.period);
+        countdown.textContent = `Refreshes in ${entry.period - Math.floor(now / 1000) % entry.period}s`;
+        if (counter === card.counter) return;
+        code.textContent = 'Computing…'; card.copy.disabled = true; card.copyStatus.textContent = '';
+        try {
+          const value = await generateTOTP(entry.secret, entry.period, entry.digits, entry.algorithm, now);
+          if (!active || Math.floor(Date.now() / 1000 / entry.period) !== counter) return;
+          code.textContent = value; card.counter = counter; card.copy.disabled = false;
+        } catch { if (active) { code.textContent = 'Unavailable'; countdown.textContent = 'Unable to generate code. Check browser Web Crypto support.'; } }
+      }));
+    } finally { busy = false; }
+  }
+  refresh();
+  const timer = entries.some(entry => !entry.error) ? setInterval(refresh, 1000) : null;
+  return () => { active = false; if (timer !== null) clearInterval(timer); container.replaceChildren(); container.hidden = true; };
+}
+
+
+
+function parseHex(value) {
+  const hex=value.replace(/\s/g,'');
+  if (hex.length%2 || !/^[0-9a-f]*$/i.test(hex)) throw new Error('Enter complete hexadecimal byte pairs (00–FF), with optional whitespace.');
+  return Uint8Array.from(hex.match(/../g)||[],pair=>parseInt(pair,16));
+}
+function toHex(bytes) { return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join(' '); }
+function inputBytes(value,encoding) { return encoding==='hex' ? parseHex(value) : utf8.encode(value); }
+async function makeRecord(value,encoding,password) {
+  let bytes=inputBytes(value,encoding);
+  if(password!==null) {
+    bytes=await encryptBytes(password,bytes,encoding==='text'?'text.txt':'data.bin');
+    return {recordType:'mime',mediaType:'application/octet-stream',data:bytes};
+  }
+  return encoding==='text' ? {recordType:'text',data:value,lang:'en',encoding:'utf-8'} : {recordType:'mime',mediaType:'application/octet-stream',data:bytes};
+}
+async function readRecord(record,password) {
+  const bytes=record.data ? new Uint8Array(record.data.buffer,record.data.byteOffset,record.data.byteLength) : new Uint8Array();
+  if(password!==null) {
+    const decoded=await decryptBytes(password,bytes);
+    // Text encrypted by this page retains its filename inside the authenticated payload.
+    let value;let format='Hex';
+    if(/\.txt$/i.test(decoded.filename)) { try {value=strictText(decoded.bytes);format='Text';} catch {} }
+    return {format,value:value===undefined?toHex(decoded.bytes):value,length:decoded.bytes.length,filename:decoded.filename};
+  }
+  const text=record.recordType==='text'||record.recordType==='url'||record.recordType==='absolute-url'||(record.recordType==='mime'&&/^text\//i.test(record.mediaType||''));
+  if(text) {try {return {format:'Text',value:new TextDecoder(record.encoding||'utf-8',{fatal:true,ignoreBOM:true}).decode(bytes),length:bytes.length};} catch {} }
+  return {format:'Hex',value:toHex(bytes),length:bytes.length};
+}
+</script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let operation=null;
+let sessionReleaseTimer=null;
+let disposeEntries=[];
+function setStatus(message){$('status').textContent=message;$('nfc-dialog-status').textContent=message;}
+function clearResult(){ for(const dispose of disposeEntries)dispose();disposeEntries=[];$('records').replaceChildren();$('result').hidden=true; }
+function update(){
+  const writing=$('write').checked;
+  $('write-panel').hidden=!writing;
+  $('password-panel').hidden=!$('encrypted').checked;
+  $('crypto-label').textContent=writing?'Encrypt with a password':'Decrypt with a password';
+  $('start').textContent=writing?'Write card':'Read card';
+  clearResult();
+  try {const bytes=inputBytes($('input').value,($('encoding-hex').checked?'hex':'text'));$('size').textContent=`${bytes.length} content bytes${$('encrypted').checked?' · '+(bytes.length+70)+' encrypted payload bytes':''}, plus NDEF overhead.`;}catch(error){$('size').textContent=error.message;}
+}
+function finish(current){if(operation!==current)return;operation=null;clearTimeout(sessionReleaseTimer);sessionReleaseTimer=null;current.abort();$('nfc-dialog').close();$('controls').disabled=false;$('cancel').disabled=true;$('start').disabled=false;}
+function releaseAfterDelay(current){
+  $('nfc-dialog').close();
+  const completedStatus=$('status').textContent;
+  setStatus(completedStatus+' Move the card away; the NFC session will end in five seconds.');
+  sessionReleaseTimer=setTimeout(()=>{if(operation!==current)return;finish(current);setStatus(completedStatus);},5000);
+}
+function cancel(){if(operation){finish(operation);setStatus('Cancelled. If writing or locking was already underway, check the tag’s contents and write protection. Cancellation cannot undo a completed lock.');}}
+for(const id of ['read','write','encoding-text','encoding-hex','encrypted'])$(id).addEventListener('change',update);
+$('input').addEventListener('input',update);
+$('password').addEventListener('input',clearResult);
+$('cancel').addEventListener('click',cancel);
+$('nfc-dialog-cancel').addEventListener('click',cancel);
+$('nfc-error-close').addEventListener('click',()=>$('nfc-error-dialog').close());
+$('nfc-success-close').addEventListener('click',()=>$('nfc-success-dialog').close());
+$('nfc-dialog').addEventListener('cancel',event=>{event.preventDefault();cancel();});
+$('clear').addEventListener('click',()=>{cancel();$('input').value='';$('password').value='';$('read-only').checked=false;update();setStatus('Cleared.');});
+$('form').addEventListener('submit',async event=>{
+  event.preventDefault();if(operation)return;clearResult();
+  const password=$('encrypted').checked?$('password').value:null;
+  if(password===''){setStatus('Enter a password or turn off password encryption/decryption.');return;}
+  const lockAfterWrite=$('write').checked && $('read-only').checked;
+  if(lockAfterWrite && !window.confirm('Permanently lock this card after writing? This cannot be reversed. You will never be able to change or erase its content, even with the password. Keep the same card against your phone until both steps finish.')) {
+    setStatus('Cancelled. Nothing was written or locked.');return;
+  }
+  let written=false;
+  let writeCompleted=false;
+  const current=new AbortController();operation=current;$('start').disabled=true;$('controls').disabled=true;$('cancel').disabled=false;
+  try {
+    setStatus($('write').checked?'Preparing to write…':'Preparing to scan…');
+    $('nfc-dialog').showModal();
+    const reader=new NDEFReader();
+    if($('write').checked){
+      setStatus('Preparing payload…');
+      const record=await makeRecord($('input').value,($('encoding-hex').checked?'hex':'text'),password);
+      if(operation!==current)return;
+      setStatus('Hold the card near your phone to replace its contents…');
+      await reader.write({records:[record]},{signal:current.signal,overwrite:true});
+      if(operation!==current)return;
+      written=true;
+      if(lockAfterWrite){
+        setStatus('Card written. Keep the same card against your phone while it is permanently locked…');
+        await reader.makeReadOnly({signal:current.signal});
+        if(operation!==current)return;
+        $('read-only').checked=false;
+        setStatus('Card written successfully and made permanently read-only.');
+      }else{setStatus('Card written successfully.');}
+      writeCompleted=true;
+      $('nfc-dialog').close();
+      $('nfc-success-message').textContent=$('status').textContent;
+      $('nfc-success-dialog').showModal();
+      // A completed write is not an active scan. Keep reader mode active briefly.
+      await reader.scan({signal:current.signal});
+      if(operation!==current)return;
+      releaseAfterDelay(current);
+    }else{
+      let processing=false;
+      reader.onreadingerror=()=>{if(operation===current&&!processing)setStatus('Could not read this tag. Reposition it and try again, or cancel.');};
+      reader.onreading=async event=>{
+        if(operation!==current||processing)return;processing=true;
+        let releaseScheduled=false;
+        setStatus('Reading card contents…');
+        try {
+          const results=[];
+          for(const record of event.message.records){
+            try {results.push(await readRecord(record,password));}
+            catch(error){results.push({error:error.message});}
+          }
+          if(operation!==current)return;
+          for(const [index,item] of results.entries()){
+            const container=document.createElement('div');container.className='record';
+            const title=document.createElement('h3');title.textContent=`Record ${index+1}`;container.append(title);
+            const label=document.createElement('p');label.textContent=item.error || `${item.format} · ${item.length} bytes${item.filename?' · '+item.filename:''}`;container.append(label);
+            if(!item.error){
+              if(item.format==='Text'){
+                const totps=document.createElement('div');totps.setAttribute('aria-label','One-time passwords');
+                const passwords=document.createElement('div');passwords.setAttribute('aria-label','Password entries');
+                container.append(totps,passwords);
+                disposeEntries.push(showTOTPCards(item.value,totps),showTextLineCards(item.value,passwords));
+                const fullLabel=document.createElement('p');fullLabel.textContent='Full decoded text';
+                const output=document.createElement('textarea');output.readOnly=true;output.spellcheck=false;
+                output.setAttribute('aria-label',`Record ${index+1} full decoded text`);
+                let plaintext=item.value,revealed=false,active=true;
+                output.value=maskDecodedText(plaintext);
+                const reveal=document.createElement('button');reveal.type='button';reveal.textContent='Reveal decoded text';reveal.setAttribute('aria-pressed','false');
+                reveal.addEventListener('click',()=>{
+                  if(!active)return;
+                  revealed=!revealed;output.value=revealed?plaintext:maskDecodedText(plaintext);
+                  reveal.textContent=revealed?'Hide decoded text':'Reveal decoded text';reveal.setAttribute('aria-pressed',String(revealed));
+                });
+                container.append(fullLabel,output,reveal);
+                disposeEntries.push(()=>{active=false;plaintext='';output.value='';});
+              }else{
+                const output=document.createElement('textarea');output.readOnly=true;output.setAttribute('aria-label',`Record ${index+1} ${item.format}`);output.value=item.value;container.append(output);
+              }
+            }
+            $('records').append(container);
+          }
+          $('result').hidden=false;setStatus(results.some(item=>item.error)?'Card read, but some records could not be decrypted. Check the password and that those records use WENC encryption.':`Read ${results.length} record(s).`);
+          releaseAfterDelay(current);
+          releaseScheduled=true;
+          $('result').focus({preventScroll:true});
+          $('result').scrollIntoView({behavior:'smooth',block:'start'});
+        }catch(error){if(operation===current)setStatus(error.message);}
+        finally{if(!releaseScheduled)finish(current);}
+      };
+      await reader.scan({signal:current.signal});
+      if(operation===current&&!processing)setStatus('Hold the card near your phone…');
+    }
+  }catch(error){if(operation===current){setStatus(`${writeCompleted?'Writing completed, but the NFC session could not stay active. ':written?'Card was written, but permanent locking was not confirmed. ':''}${error.name}: ${error.message}`);finish(current);$('nfc-success-dialog').close();$('nfc-error-message').textContent=$('status').textContent;$('nfc-error-dialog').showModal();}}
+});
+window.addEventListener('pagehide',()=>{cancel();clearResult();});
+update();$('start').disabled=false;
+</script>
+</body></html>
