@@ -1,0 +1,158 @@
+<html>
+  <head>
+    <script>
+      const encoder = new TextEncoder();
+
+      // passphrase: a non-empty string (UTF-8 encoded) or a non-empty
+      // Uint8Array of raw bytes, e.g. from crypto.getRandomValues.
+      async function deriveDeterministicBitsFactory(passphrase) {
+        let passphraseBytes;
+        if (typeof passphrase === "string") {
+          passphraseBytes = encoder.encode(passphrase);
+        } else if (passphrase instanceof Uint8Array) {
+          passphraseBytes = passphrase;
+        } else {
+          throw new Error("Passphrase must be a string or a Uint8Array.");
+        }
+        if (passphraseBytes.length === 0) {
+          throw new Error("Enter a passphrase.");
+        }
+
+        const key = await crypto.subtle.importKey(
+          "raw",
+          passphraseBytes,
+          "PBKDF2",
+          false,
+          ["deriveBits"],
+        );
+
+        let byteOffset = 0;
+        let BYTE_PAGE_SIZE = 128;
+
+        return async () => {
+          const start = byteOffset;
+          byteOffset += BYTE_PAGE_SIZE;
+
+          const arr = new Uint8Array(
+            await crypto.subtle.deriveBits(
+              {
+                name: "PBKDF2",
+                hash: "SHA-256",
+                iterations: 600_000,
+                salt: new Uint8Array(0),
+              },
+              key,
+              byteOffset * 8,
+            ),
+          );
+
+          return arr.slice(start, start + BYTE_PAGE_SIZE);
+        };
+      }
+
+      // Returns readBits(n): reads the next n bits (0..53) as an unsigned
+      // integer, requesting new pages from deriveDeterministicBits as needed.
+      async function bitReaderFactory(passphrase) {
+        let bytes = new Uint8Array(0);
+        let bitIndex = 0;
+        const deriveDeterministicBits =
+          await deriveDeterministicBitsFactory(passphrase);
+
+        return async (n) => {
+          if (!Number.isInteger(n) || n < 0 || n > 53) {
+            throw new Error("Bit count must be an integer between 0 and 53.");
+          }
+
+          let value = 0;
+          for (let i = 0; i < n; i++) {
+            if (bitIndex >= bytes.length * 8) {
+              bytes = await deriveDeterministicBits();
+              bitIndex = 0;
+            }
+            const bit = (bytes[bitIndex >> 3] >> (7 - (bitIndex & 7))) & 1;
+            value = value * 2 + bit;
+            bitIndex++;
+          }
+          return value;
+        };
+      }
+
+      // Yields floats in [0, 1) built from 53 bits each (full double precision).
+      async function* randomNumberGenerator(passphrase) {
+        const BITS_PER_NUMBER = 53;
+        const readBits = await bitReaderFactory(passphrase);
+
+        while (true) {
+          yield (await readBits(BITS_PER_NUMBER)) / 2 ** BITS_PER_NUMBER;
+        }
+      }
+
+      // Yields unsigned integers in [0, 2^bits), default 32 bits.
+      async function* randomIntegerGenerator(passphrase, bits = 32) {
+        if (!Number.isInteger(bits) || bits < 1 || bits > 53) {
+          throw new Error("Bits must be an integer between 1 and 53.");
+        }
+        const readBits = await bitReaderFactory(passphrase);
+
+        while (true) {
+          yield await readBits(bits);
+        }
+      }
+
+      // Yields integers in [min, max] (inclusive) without modulo bias, using
+      // rejection sampling: draw just enough bits to cover the range and
+      // discard values outside it, so every result is equally likely.
+      async function* randomIntegerRangeGenerator(passphrase, min, max) {
+        if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max)) {
+          throw new Error("Min and max must be safe integers.");
+        }
+        if (min > max) {
+          throw new Error("Min must be less than or equal to max.");
+        }
+        const range = max - min + 1;
+        if (!Number.isSafeInteger(range)) {
+          throw new Error("Range max - min + 1 must not exceed 2^53 - 1.");
+        }
+
+        let bits = 0;
+        while (2 ** bits < range) {
+          bits++;
+        }
+
+        const readBits = await bitReaderFactory(passphrase);
+
+        while (true) {
+          let value;
+          do {
+            value = await readBits(bits);
+          } while (value >= range);
+          yield min + value;
+        }
+      }
+
+      async function run() {
+        // const passphrase = new Uint8Array(32);
+        // crypto.getRandomValues(passphrase);
+        // console.log(passphrase.toHex());
+        const passphrase = Uint8Array.fromHex(
+          "9654e37b6de306bfa4fed16a050ae09e1a6aa5ad7aeb533690e5daf2dcfdb2d9",
+        );
+        const floats = randomNumberGenerator(passphrase);
+        const ints = randomIntegerGenerator(passphrase, 8);
+        const dice = randomIntegerRangeGenerator(passphrase, 1, 6);
+
+        for (let i = 0; i < 10; i++) {
+          console.log(
+            i,
+            (await floats.next()).value,
+            (await ints.next()).value,
+            (await dice.next()).value,
+          );
+        }
+      }
+
+      run();
+    </script>
+  </head>
+  <body></body>
+</html>
