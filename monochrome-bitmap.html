@@ -3,10 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark" />
-    <title>One-time pad encryption &amp; decryption</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Monochrome bitmap</title>
     <style>
       :root {
+        color-scheme: dark;
         --background: #090b0a;
         --surface: #141816;
         --surface-raised: #1a201d;
@@ -17,24 +21,17 @@
         --accent-hover: #ffbd2e;
         --error: #ff8c82;
         --success: #89d99d;
-        --warning: #ffd479;
       }
-
       * {
         box-sizing: border-box;
       }
-
       body {
         min-height: 100vh;
         margin: 0;
         padding: 32px 18px;
         color: var(--text);
         background:
-          radial-gradient(
-            circle at 50% 0%,
-            rgba(242, 169, 0, 0.1),
-            transparent 34rem
-          ),
+          radial-gradient(circle at 50% 0%, #f2a90018, transparent 34rem),
           var(--background);
         font-family:
           Inter,
@@ -45,7 +42,6 @@
           "Segoe UI",
           sans-serif;
       }
-
       main {
         width: min(820px, 100%);
         margin: 0 auto;
@@ -67,433 +63,210 @@
         line-height: 1;
         letter-spacing: -0.055em;
       }
+      h2 {
+        margin-top: 0;
+        font-size: 1.2rem;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.6;
+      }
       .intro {
         max-width: 650px;
         margin: 16px 0 0;
-        color: var(--muted);
         line-height: 1.65;
       }
-
-      .notice {
-        display: flex;
-        gap: 10px;
-        margin: 22px 0 0;
-        padding: 12px 14px;
-        border: 1px solid rgba(137, 217, 157, 0.28);
-        border-radius: 10px;
-        color: #c8dfce;
-        background: rgba(137, 217, 157, 0.06);
-        font-size: 0.88rem;
-        line-height: 1.5;
-      }
-      .notice::before {
-        content: "●";
-        color: var(--success);
-        font-size: 0.7rem;
-        line-height: 1.9;
-      }
-
-      .security-alert {
-        display: flex;
-        gap: 10px;
-        margin: 12px 0 0;
-        padding: 12px 14px;
-        border: 1px solid rgba(255, 140, 130, 0.38);
-        border-radius: 10px;
-        color: #ffd0cc;
-        background: rgba(255, 140, 130, 0.07);
-        font-size: 0.88rem;
-        line-height: 1.5;
-      }
-      .security-alert::before {
-        content: "⚠";
-        color: var(--error);
-        font-weight: 800;
-      }
-
-      form {
+      .card {
         padding: clamp(20px, 4vw, 34px);
+        margin: 24px 0;
         border: 1px solid var(--border);
         border-radius: 18px;
-        background: rgba(20, 24, 22, 0.95);
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+        background: var(--surface);
       }
-      label {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 9px;
-        font-size: 0.9rem;
+      form.card {
+        box-shadow: 0 24px 80px #00000047;
+      }
+      fieldset {
+        min-width: 0;
+        border: 0;
+        padding: 0;
+        margin: 0 0 24px;
+      }
+      #controls {
+        margin-bottom: 0;
+      }
+      h3 {
+        margin: 0 0 14px;
+        font-size: 1rem;
+        color: var(--accent);
+      }
+      legend,
+      .label {
+        display: block;
+        margin-bottom: 10px;
         font-weight: 700;
       }
-      #byte-count {
-        color: var(--muted);
-        font-size: 0.78rem;
-        font-weight: 500;
+      .choices {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
       }
-      #byte-count.limit {
-        color: var(--error);
+      .choices label,
+      .show {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
       }
-      textarea {
+      input {
+        max-width: 100%;
+      }
+      input[type="radio"],
+      input[type="checkbox"],
+      input[type="range"] {
+        accent-color: var(--accent);
+      }
+      input[type="range"] {
+        display: block;
         width: 100%;
-        min-height: 170px;
-        resize: vertical;
+      }
+      input[type="number"],
+      input[type="password"],
+      input[type="text"],
+      textarea,
+      select {
+        display: block;
+        width: 100%;
         padding: 14px 15px;
         border: 1px solid var(--border);
         border-radius: 10px;
-        outline: none;
         color: var(--text);
         background: #0e110f;
+        font: inherit;
+      }
+      textarea {
+        min-height: 96px;
+        resize: vertical;
+        overflow-wrap: anywhere;
         font:
-          0.88rem/1.55 ui-monospace,
+          0.88rem/1.6 ui-monospace,
           SFMono-Regular,
           Menlo,
           Monaco,
           Consolas,
           monospace;
-        overflow-wrap: anywhere;
-        transition:
-          border-color 150ms ease,
-          box-shadow 150ms ease;
       }
-      textarea:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(242, 169, 0, 0.12);
+      input[type="file"] {
+        width: 100%;
+        color: var(--muted);
+        font:
+          0.9rem system-ui,
+          sans-serif;
       }
-      textarea::placeholder {
-        color: #68716b;
-      }
-
-      .actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 24px;
-      }
-      button {
+      button,
+      .download,
+      input::file-selector-button {
+        display: inline-block;
         min-height: 46px;
-        padding: 0 18px;
-        border: 1px solid transparent;
+        padding: 12px 18px;
+        border: 1px solid var(--border);
         border-radius: 9px;
-        cursor: pointer;
         color: var(--text);
         background: var(--surface-raised);
         font: inherit;
         font-size: 0.9rem;
         font-weight: 750;
+        cursor: pointer;
+        text-decoration: none;
+        overflow-wrap: anywhere;
       }
-      button:hover {
+      input::file-selector-button {
+        margin-right: 12px;
+      }
+      button:hover,
+      .download:hover,
+      input::file-selector-button:hover {
         border-color: #4a554e;
       }
-      button:focus-visible {
-        outline: 3px solid rgba(242, 169, 0, 0.4);
-        outline-offset: 2px;
-      }
-      button[type="submit"] {
-        flex: 1;
+      .download,
+      .primary {
         color: #17130a;
         background: var(--accent);
-      }
-      button[type="submit"]:hover {
         border-color: transparent;
+      }
+      .download:hover,
+      .primary:hover {
         background: var(--accent-hover);
       }
-      button:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
-      }
-
-      .message {
-        min-height: 1.5em;
-        margin: 16px 0 0;
-        color: var(--error);
-        font-size: 0.9rem;
-        line-height: 1.5;
-      }
-      .message.success {
-        color: var(--success);
-      }
-      .results {
-        display: grid;
-        gap: 16px;
-        margin-top: 18px;
-      }
-      .output {
-        padding: 18px;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        background: #0e110f;
-      }
-      .output.key {
-        border-color: rgba(255, 212, 121, 0.32);
-        background: rgba(255, 212, 121, 0.035);
-      }
-      .output-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 12px;
-      }
-      .output h2 {
-        margin: 0;
-        color: var(--success);
-        font-size: 0.78rem;
-        letter-spacing: 0.11em;
-        text-transform: uppercase;
-      }
-      .output.key h2 {
-        color: var(--warning);
-      }
-      .output-actions {
-        display: flex;
-        gap: 8px;
-      }
-      .output-actions button {
-        min-height: 34px;
-        padding: 0 11px;
-        font-size: 0.78rem;
-      }
-      pre {
-        max-height: 220px;
-        margin: 0;
-        overflow: auto;
-        white-space: pre-wrap;
-        overflow-wrap: anywhere;
-        font:
-          0.83rem/1.6 ui-monospace,
-          SFMono-Regular,
-          Menlo,
-          Monaco,
-          Consolas,
-          monospace;
-      }
-      .key-warning {
-        margin: 12px 0 0;
-        color: var(--warning);
-        font-size: 0.82rem;
-        line-height: 1.5;
-      }
-      .technical-note {
-        margin: 18px 2px 0;
-        color: var(--muted);
-        font-size: 0.8rem;
-        line-height: 1.6;
-      }
-
-      dialog {
-        width: min(620px, calc(100% - 24px));
-        padding: 0;
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        color: var(--text);
-        background: var(--surface);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.65);
-      }
-      dialog::backdrop {
-        background: rgba(2, 4, 3, 0.82);
-        backdrop-filter: blur(4px);
-      }
-      .qr-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 18px 20px;
-        border-bottom: 1px solid var(--border);
-      }
-      .qr-header h2 {
-        margin: 0;
-        font-size: 1rem;
-      }
-      .close-qr {
-        min-width: 42px;
-        min-height: 38px;
-        padding: 0;
-        color: var(--muted);
-        border-color: var(--border);
-        background: transparent;
-        font-size: 1.25rem;
-      }
-      .qr-body {
-        padding: 20px;
-        text-align: center;
-      }
-      #qr-image {
-        display: block;
-        width: min(100%, 520px);
-        height: auto;
-        margin: 0 auto;
-        border: 10px solid white;
-        background: white;
-        image-rendering: pixelated;
-      }
-      .qr-note {
-        margin: 14px 0 0;
-        color: var(--muted);
-        font-size: 0.82rem;
-        line-height: 1.5;
-      }
-      [hidden] {
-        display: none;
-      }
-
-      @media (max-width: 560px) {
-        body {
-          padding: 20px 12px;
-        }
-        header {
-          margin-top: 14px;
-        }
-        .actions {
-          flex-direction: column;
-        }
-        button[type="reset"] {
-          order: 2;
-        }
-        .output-header {
-          align-items: flex-start;
-          flex-direction: column;
-        }
-        .output-actions {
-          width: 100%;
-        }
-        .output-actions button {
-          flex: 1;
-        }
-      }
-      .field + .field {
-        margin-top: 24px;
-      }
-      .field-help {
-        float: right;
-        color: var(--muted);
-        font-size: 0.78rem;
-        font-weight: 500;
-      }
-      .input-with-scan {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 10px;
-        align-items: start;
-      }
-      .scan-button {
-        min-width: 104px;
-        color: var(--text);
-        border-color: var(--border);
-        background: var(--surface-raised);
-      }
-      .scan-button:hover,
-      .scan-button:focus-visible {
-        border-color: var(--accent);
-      }
-      .result {
-        margin-top: 18px;
-        padding: 20px;
-        border: 1px solid rgba(137, 217, 157, 0.3);
-        border-radius: 12px;
-        background: rgba(137, 217, 157, 0.055);
-      }
-      .result-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 12px;
-      }
-      .result h2 {
-        margin: 0;
-        color: var(--success);
-        font-size: 0.78rem;
-        letter-spacing: 0.11em;
-        text-transform: uppercase;
-      }
-      .copy-result {
-        min-height: 34px;
-        padding: 0 12px;
-        color: var(--text);
-        border-color: var(--border);
-        background: var(--surface-raised);
-        font-size: 0.78rem;
-      }
-      .scanner-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 18px 20px;
-        border-bottom: 1px solid var(--border);
-      }
-      .scanner-header h2 {
-        margin: 0;
-        font-size: 1rem;
-      }
-      .close-scanner {
-        min-width: 42px;
-        min-height: 38px;
-        padding: 0;
-        color: var(--muted);
-        border-color: var(--border);
-        background: transparent;
-        font-size: 1.25rem;
-      }
-      .scanner-body {
-        padding: 20px;
-      }
-      .camera-frame {
-        position: relative;
-        overflow: hidden;
-        aspect-ratio: 4 / 3;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        background: #050706;
-      }
-      .camera-frame::after {
-        content: "";
-        position: absolute;
-        inset: 18%;
-        border: 2px solid var(--accent);
-        border-radius: 12px;
-        box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.25);
-        pointer-events: none;
-      }
-      video {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .scanner-status {
-        min-height: 1.5em;
-        margin: 14px 0 0;
-        color: var(--muted);
-        font-size: 0.88rem;
-        line-height: 1.5;
-      }
-      .input-with-scan {
-        grid-template-columns: 1fr;
-      }
-      .scan-button {
-        width: 100%;
-      }
-      .mode-selector {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 24px;
-      }
-      .mode-selector button {
+      .primary {
         flex: 1;
       }
-      .mode-selector button[aria-pressed="true"] {
-        color: #17130a;
-        background: var(--accent);
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
-      @media (max-width: 560px) {
-        .input-with-scan {
-          grid-template-columns: 1fr;
-        }
-        .scan-button {
-          width: 100%;
-        }
+      .subsection {
+        margin-top: 28px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 24px;
+      }
+      .section {
+        margin-top: 24px;
+      }
+      .show {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .muted {
+        font-size: 0.85rem;
+      }
+      #status {
+        white-space: pre-wrap;
+        color: var(--error);
+        font-size: 0.9rem;
+      }
+      #preview,
+      #qr-preview {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        margin-top: 18px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        image-rendering: pixelated;
+        background: #fff;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 700;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.85rem;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid var(--border);
+        overflow-wrap: anywhere;
+      }
+      code {
+        color: var(--accent);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
       }
 
       /* Shared offline-tools navigation; embedded to keep every page standalone. */
@@ -586,7 +359,7 @@
             </li>
             <li><a href="./password-manager.html">Passwords and TOTP</a></li>
             <li>
-              <a href="./one-time-pad-encryption.html" aria-current="page"
+              <a href="./one-time-pad-encryption.html"
                 >One-time pad encryption</a
               >
             </li>
@@ -598,231 +371,612 @@
             <li>
               <a href="./lsb-steganography.html">LSB image steganography</a>
             </li>
-            <li><a href="./monochrome-bitmap.html">Monochrome bitmap</a></li>
+            <li>
+              <a href="./monochrome-bitmap.html" aria-current="page"
+                >Monochrome bitmap</a
+              >
+            </li>
           </ul>
         </nav>
       </details>
 
       <header>
-        <p class="eyebrow">Offline encryption utility</p>
-        <h1>One-time pad</h1>
+        <p class="eyebrow">Offline tools</p>
+        <h1>Monochrome bitmap</h1>
         <p class="intro">
-          Encrypt text with a fresh random pad, or combine encrypted content and
-          its matching pad to recover the text.
-        </p>
-        <p class="notice">
-          Everything happens locally in this page. Your plaintext, ciphertext,
-          and pad are never stored or sent over the network.
-        </p>
-        <p class="security-alert" role="alert">
-          <span
-            ><strong>Use only on a trusted, air-gapped device.</strong> Malware
-            on the device could read and leak your content or one-time
-            pad.</span
-          >
+          Turn a photo into a 1-bit black and white bitmap (<code>.bmp</code>),
+          optionally hiding up to two 264-bit secrets in passphrase-scattered
+          pixels, each with its own passphrase. Everything runs locally in your
+          browser; nothing is uploaded or saved by the page.
         </p>
       </header>
-
-      <nav class="mode-selector" aria-label="Operation mode">
-        <button
-          id="encryption-mode"
-          type="button"
-          aria-pressed="true"
-          aria-controls="encryption-form"
-        >
-          Encryption
-        </button>
-        <button
-          id="decryption-mode"
-          type="button"
-          aria-pressed="false"
-          aria-controls="decryption-form"
-        >
-          Decryption
-        </button>
-      </nav>
-      <form id="encryption-form" novalidate>
-        <label for="plaintext">
-          Content to encrypt
-          <span id="byte-count">0 / 65,536 bytes · minimum 16</span>
-        </label>
-        <textarea
-          id="plaintext"
-          name="plaintext"
-          placeholder="Enter the content to encrypt"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-          aria-describedby="form-message"
-        ></textarea>
-
+      <form id="form" class="card">
+        <fieldset id="controls">
+          <fieldset>
+            <legend>Operation</legend>
+            <div class="choices">
+              <label
+                ><input
+                  type="radio"
+                  name="operation"
+                  id="create"
+                  value="create"
+                  checked
+                />
+                Create bitmap</label
+              ><label
+                ><input
+                  type="radio"
+                  name="operation"
+                  id="extract"
+                  value="extract"
+                />
+                Extract hidden data</label
+              >
+            </div>
+          </fieldset>
+          <div id="create-panel">
+            <div>
+              <label class="label" for="image">Photo</label
+              ><input id="image" type="file" accept="image/*" />
+              <p id="image-info" class="muted">
+                On phones this also offers the camera.
+              </p>
+            </div>
+            <fieldset class="section">
+              <legend>Conversion</legend>
+              <div class="choices">
+                <label
+                  ><input
+                    type="radio"
+                    name="method"
+                    id="floyd"
+                    value="floyd"
+                    checked
+                  />
+                  Floyd–Steinberg dithering</label
+                ><label
+                  ><input
+                    type="radio"
+                    name="method"
+                    id="atkinson"
+                    value="atkinson"
+                  />
+                  Atkinson dithering</label
+                ><label
+                  ><input
+                    type="radio"
+                    name="method"
+                    id="threshold-mode"
+                    value="threshold"
+                  />
+                  Threshold</label
+                >
+              </div>
+              <p class="muted">
+                Dithering keeps shading in photos using patterns of dots.
+                Threshold gives clean solid areas, best for text, logos and line
+                art.
+              </p>
+            </fieldset>
+            <div>
+              <label class="label" for="threshold"
+                >Threshold: <span id="threshold-value">128</span></label
+              ><input
+                id="threshold"
+                type="range"
+                min="1"
+                max="255"
+                value="128"
+              />
+              <p class="muted">
+                Gray levels below the threshold become black. Lower values give
+                a lighter image.
+              </p>
+            </div>
+            <div class="section">
+              <label class="label" for="width">Width in pixels (optional)</label
+              ><input
+                id="width"
+                type="number"
+                min="1"
+                max="20000"
+                step="1"
+                inputmode="numeric"
+                placeholder="Original width"
+              />
+              <p class="muted">
+                Height follows the aspect ratio. Dithering looks best at the
+                size the bitmap will be shown or printed.
+              </p>
+            </div>
+            <label class="show"
+              ><input id="invert" type="checkbox" /> Invert (white on
+              black)</label
+            >
+            <fieldset class="section">
+              <legend>Output format</legend>
+              <div class="choices">
+                <label
+                  ><input
+                    type="radio"
+                    name="output"
+                    id="bmp-format"
+                    value="bmp"
+                    checked
+                  />
+                  BMP file</label
+                ><label
+                  ><input
+                    type="radio"
+                    name="output"
+                    id="webp-format"
+                    value="webp"
+                  />
+                  WebP data URL (Base64)</label
+                >
+              </div>
+              <p class="muted">
+                The data URL is a lossless WebP encoded as text
+                (<code>data:image/webp;base64,…</code>) that can be copied or
+                turned into a QR code. Lossless WebP encoding needs a
+                Chromium-based browser such as Chrome or Edge.
+              </p>
+            </fieldset>
+            <div class="subsection">
+              <h2>Hidden secrets (optional)</h2>
+              <p class="muted">
+                Up to two secrets, each with its own passphrase and its own half
+                of the pixels, so they never overwrite each other. Neither
+                passphrase reveals whether the other secret exists: an unused
+                slot is filled with random bits.
+              </p>
+              <div class="secret">
+                <h3>Secret 1</h3>
+                <fieldset>
+                  <legend>Format</legend>
+                  <div class="choices">
+                    <label
+                      ><input
+                        type="radio"
+                        name="format-1"
+                        id="ascii-mode-1"
+                        value="ascii"
+                        checked
+                      />
+                      ASCII text</label
+                    ><label
+                      ><input
+                        type="radio"
+                        name="format-1"
+                        id="hex-mode-1"
+                        value="hex"
+                      />
+                      Hex digits</label
+                    >
+                  </div>
+                </fieldset>
+                <label class="label" for="payload-1" id="payload-label-1"
+                  >ASCII text to hide</label
+                ><textarea
+                  id="payload-1"
+                  spellcheck="false"
+                  autocapitalize="off"
+                ></textarea>
+                <p id="payload-info-1" class="muted"></p>
+                <div class="section">
+                  <label class="label" for="passphrase-1">Passphrase 1</label
+                  ><input
+                    id="passphrase-1"
+                    type="password"
+                    autocomplete="new-password"
+                  />
+                </div>
+                <div class="section">
+                  <label class="label" for="confirm-1"
+                    >Confirm passphrase 1</label
+                  ><input
+                    id="confirm-1"
+                    type="password"
+                    autocomplete="new-password"
+                  />
+                </div>
+              </div>
+              <div class="secret section">
+                <h3>Secret 2 (optional)</h3>
+                <fieldset>
+                  <legend>Format</legend>
+                  <div class="choices">
+                    <label
+                      ><input
+                        type="radio"
+                        name="format-2"
+                        id="ascii-mode-2"
+                        value="ascii"
+                        checked
+                      />
+                      ASCII text</label
+                    ><label
+                      ><input
+                        type="radio"
+                        name="format-2"
+                        id="hex-mode-2"
+                        value="hex"
+                      />
+                      Hex digits</label
+                    >
+                  </div>
+                </fieldset>
+                <label class="label" for="payload-2" id="payload-label-2"
+                  >ASCII text to hide</label
+                ><textarea
+                  id="payload-2"
+                  spellcheck="false"
+                  autocapitalize="off"
+                ></textarea>
+                <p id="payload-info-2" class="muted"></p>
+                <div class="section">
+                  <label class="label" for="passphrase-2">Passphrase 2</label
+                  ><input
+                    id="passphrase-2"
+                    type="password"
+                    autocomplete="new-password"
+                  />
+                </div>
+                <div class="section">
+                  <label class="label" for="confirm-2"
+                    >Confirm passphrase 2</label
+                  ><input
+                    id="confirm-2"
+                    type="password"
+                    autocomplete="new-password"
+                  />
+                </div>
+              </div>
+              <label class="show"
+                ><input id="show-passphrase" type="checkbox" /> Show
+                passphrases</label
+              >
+              <p class="muted">
+                Leave both secrets empty for a plain bitmap. No length, type or
+                checksum is stored, so remember how many characters or digits
+                you hid. The data itself is not encrypted.
+              </p>
+            </div>
+          </div>
+          <div id="extract-panel" hidden>
+            <div>
+              <label class="label" for="bitmap">Bitmap with hidden data</label
+              ><input
+                id="bitmap"
+                type="file"
+                accept=".bmp,.webp,.png,image/bmp,image/webp,image/png"
+              />
+              <p class="muted">
+                Use the BMP or WebP produced by this page, or a lossless copy
+                with exactly the same pixels and size.
+              </p>
+            </div>
+            <div class="section">
+              <label class="label" for="extract-dataurl"
+                >Or paste a data URL</label
+              ><textarea
+                id="extract-dataurl"
+                spellcheck="false"
+                autocapitalize="off"
+                placeholder="data:image/webp;base64,UklGR…"
+              ></textarea>
+              <p class="muted">
+                For example the text scanned from the QR code. When filled in,
+                it is used instead of the file.
+              </p>
+            </div>
+            <div class="section">
+              <label class="label" for="extract-passphrase">Passphrase</label
+              ><input
+                id="extract-passphrase"
+                type="password"
+                autocomplete="current-password"
+              /><label class="show"
+                ><input id="show-extract-passphrase" type="checkbox" /> Show
+                passphrase</label
+              >
+            </div>
+          </div>
+          <div class="actions">
+            <button id="extract-button" type="submit" class="primary" hidden>
+              Extract data</button
+            ><button id="clear" type="button">Clear</button>
+          </div>
+        </fieldset>
+      </form>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="result" class="card" hidden>
+        <h2>Bitmap</h2>
+        <p id="result-info"></p>
+        <canvas id="preview" aria-label="Monochrome preview"></canvas>
         <div class="actions">
-          <button type="reset">Clear everything</button>
-          <button type="submit">Generate pad &amp; encrypt</button>
+          <a id="download" class="download" download>Download</a>
         </div>
-
-        <p
-          id="form-message"
-          class="message"
-          role="alert"
-          aria-live="polite"
-        ></p>
-
-        <section id="results" class="results" aria-live="polite" hidden>
-          <article class="output">
-            <div class="output-header">
-              <h2>Encrypted content · hexadecimal</h2>
-              <div class="output-actions">
-                <button type="button" data-copy="ciphertext">Copy</button>
-                <button type="button" data-download="ciphertext">
-                  Download
-                </button>
-                <button type="button" data-show-qr="ciphertext" disabled>
-                  Show QR
-                </button>
-                <button type="button" data-download-qr="ciphertext" disabled>
-                  Download QR
-                </button>
-              </div>
+        <div id="dataurl-panel" class="subsection" hidden>
+          <label class="label" for="dataurl">Data URL</label
+          ><textarea id="dataurl" readonly spellcheck="false"></textarea>
+          <p id="dataurl-info" class="muted"></p>
+          <div class="actions">
+            <button id="copy" type="button">Copy data URL</button>
+          </div>
+          <div class="section">
+            <label class="label" for="qr-level">QR code error correction</label
+            ><select id="qr-level">
+              <option value="L" selected>
+                L · recovers ~7% damage · up to 2,953 characters
+              </option>
+              <option value="M">
+                M · recovers ~15% damage · up to 2,331 characters
+              </option>
+              <option value="Q">
+                Q · recovers ~25% damage · up to 1,663 characters
+              </option>
+              <option value="H">
+                H · recovers ~30% damage · up to 1,273 characters
+              </option>
+            </select>
+            <p id="qr-info" class="muted"></p>
+            <canvas
+              id="qr-preview"
+              aria-label="QR code of the data URL"
+              hidden
+            ></canvas>
+            <div class="actions">
+              <a id="qr-download" class="download" download hidden
+                >Download QR code</a
+              >
             </div>
-            <pre id="ciphertext"></pre>
-          </article>
-
-          <article class="output key">
-            <div class="output-header">
-              <h2>One-time pad · hexadecimal</h2>
-              <div class="output-actions">
-                <button type="button" data-copy="pad">Copy</button>
-                <button type="button" data-download="pad">Download</button>
-                <button type="button" data-show-qr="pad" disabled>
-                  Show QR
-                </button>
-                <button type="button" data-download-qr="pad" disabled>
-                  Download QR
-                </button>
-              </div>
-            </div>
-            <pre id="pad"></pre>
-            <p class="key-warning">
-              Keep this pad secret and separate from the ciphertext. Never reuse
-              it. Losing it makes recovery impossible.
+          </div>
+        </div>
+      </section>
+      <section id="extract-result" class="card" hidden>
+        <h2>Recovered bits</h2>
+        <p id="extract-info" class="muted">
+          264 bits per slot, read from the pixels this passphrase selects. Every
+          passphrase produces output for both slots and there is deliberately no
+          way to tell which, if either, is real: your secret is at the start of
+          its slot (slot 1 for secret 1, slot 2 for secret 2), followed by
+          random padding. The other slot shows meaningless bits.
+        </p>
+        <fieldset>
+          <legend>Show as</legend>
+          <div class="choices">
+            <label
+              ><input
+                type="radio"
+                name="view"
+                id="view-hex"
+                value="hex"
+                checked
+              />
+              Hex digits</label
+            ><label
+              ><input type="radio" name="view" id="view-ascii" value="ascii" />
+              ASCII text</label
+            >
+          </div>
+        </fieldset>
+        <label for="output-1" class="label" id="output-label-1">Slot 1</label
+        ><textarea id="output-1" readonly spellcheck="false"></textarea>
+        <label for="output-2" class="label section" id="output-label-2"
+          >Slot 2</label
+        ><textarea id="output-2" readonly spellcheck="false"></textarea>
+      </section>
+      <p class="muted">
+        Output: Windows BMP, 1 bit per pixel, two-color palette (index 0 black,
+        index 1 white), or a lossless WebP as a file and Base64 data URL; every
+        WebP is decoded and compared pixel by pixel before it is offered.
+        Transparent areas are placed on white. Colors are converted to gray with
+        Rec. 709 luma weights. Large photos need more time and browser memory.
+        QR codes hold the data URL in byte mode up to version 40 (177 × 177
+        modules); codes near that size are dense, so print them large and scan
+        in good light.
+      </p>
+      <details class="card">
+        <summary>BMP file layout</summary>
+        <p>
+          All multi-byte integers are little-endian. Rows are stored bottom to
+          top, each padded with zero bits to a multiple of 4 bytes. In each byte
+          the most significant bit is the leftmost pixel; a <code>1</code> bit
+          is white.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Byte offset</th>
+              <th>Bytes</th>
+              <th>Field</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>0</td>
+              <td>2</td>
+              <td>Signature: ASCII BM</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>4</td>
+              <td>File size</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>4</td>
+              <td>Reserved: 0</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>4</td>
+              <td>Pixel data offset: 62</td>
+            </tr>
+            <tr>
+              <td>14</td>
+              <td>4</td>
+              <td>Header size: 40 (BITMAPINFOHEADER)</td>
+            </tr>
+            <tr>
+              <td>18</td>
+              <td>4</td>
+              <td>Width</td>
+            </tr>
+            <tr>
+              <td>22</td>
+              <td>4</td>
+              <td>Height (positive: bottom-up)</td>
+            </tr>
+            <tr>
+              <td>26</td>
+              <td>2</td>
+              <td>Planes: 1</td>
+            </tr>
+            <tr>
+              <td>28</td>
+              <td>2</td>
+              <td>Bits per pixel: 1</td>
+            </tr>
+            <tr>
+              <td>30</td>
+              <td>4</td>
+              <td>Compression: 0 (none)</td>
+            </tr>
+            <tr>
+              <td>34</td>
+              <td>4</td>
+              <td>Pixel data size: row stride × height</td>
+            </tr>
+            <tr>
+              <td>38</td>
+              <td>8</td>
+              <td>Resolution: 2835 × 2835 pixels per metre (72 DPI)</td>
+            </tr>
+            <tr>
+              <td>46</td>
+              <td>4</td>
+              <td>Colors used: 2</td>
+            </tr>
+            <tr>
+              <td>50</td>
+              <td>4</td>
+              <td>Important colors: 2</td>
+            </tr>
+            <tr>
+              <td>54</td>
+              <td>8</td>
+              <td>
+                Palette: <code>00 00 00 00</code> (black),
+                <code>FF FF FF 00</code> (white), as blue, green, red, reserved
+              </td>
+            </tr>
+            <tr>
+              <td>62</td>
+              <td>Remaining</td>
+              <td>Pixel rows; stride = ceil(width / 32) × 4 bytes</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="card">
+        <summary>Hidden data algorithm and format</summary>
+        <p>
+          This uses the same scattering as the
+          <a href="./lsb-steganography.html" style="color: var(--accent)"
+            >LSB steganography</a
+          >
+          page, but every pixel is one bit: instead of changing a least
+          significant bit, a chosen pixel is set to black (<code>0</code>) or
+          white (<code>1</code>). Pixels are numbered in raster order (left to
+          right, top to bottom). Data is applied after dithering and inversion,
+          so bits are absolute pixel colors.
+        </p>
+        <ol>
+          <li>
+            <p>
+              A random 16-byte salt is written, most significant bit first, into
+              the first 128 pixels. It is shared by both slots and excluded from
+              everything that follows. In a plain white or black area these 128
+              pixels at the top left are visible as a short noisy line.
             </p>
-          </article>
-        </section>
-
-        <p class="technical-note">
-          Randomness is generated with <code>crypto.getRandomValues()</code>.
-          Encryption is a byte-for-byte XOR of the UTF-8 plaintext and the
-          one-time pad.
+          </li>
+          <li>
+            <p>
+              Each passphrase goes through PBKDF2-SHA-256 with the salt and
+              600,000 iterations; <code>crypto.subtle.deriveBits</code> returns
+              256 bits that become an AES-256-CTR key. Slot <code>s</code> (0 or
+              1) uses the keystream of zero bytes whose 128-bit counter block
+              starts with <code>s</code> as a 64-bit big-endian number in the
+              upper half and a 64-bit block counter in the lower half, consumed
+              most significant bit first.
+            </p>
+          </li>
+          <li>
+            <p>
+              The remaining <code>M = width × height − 128</code> pixels form
+              the pool. Slot 0 may only use pool indices 0, 2, 4, … and slot 1
+              only 1, 3, 5, …, so the slots never share a pixel. Within its
+              half, each slot runs a partial Fisher–Yates shuffle: for step
+              <code>i</code>, <code>j = i + uniform(n − i)</code> over the
+              half's <code>n</code> pixels. <code>uniform(n)</code> reads only
+              <code>ceil(log2(n))</code> bits and rejects values ≥
+              <code>n</code>.
+            </p>
+          </li>
+          <li>
+            <p>
+              Each slot's 264-bit record is written bit by bit into its chosen
+              pixels, in draw order. Roughly half of them already have the right
+              color and do not change. A slot without a secret gets a random
+              record at positions from a random key, so images with one or two
+              secrets look the same. Extraction derives one key from the
+              passphrase and reads 264 bits from each slot.
+            </p>
+          </li>
+        </ol>
+        <table>
+          <thead>
+            <tr>
+              <th>Bit offset</th>
+              <th>Bits</th>
+              <th>Field</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>0</td>
+              <td>Payload length</td>
+              <td>
+                Payload: ASCII at 8 bits per character, or hex at 4 bits per
+                digit (leading zeros and odd digit counts preserved)
+              </td>
+            </tr>
+            <tr>
+              <td>Payload length</td>
+              <td>264 − payload length</td>
+              <td>Random padding from the browser's secure random generator</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          For plausible deniability there is no header, length, type, version or
+          checksum, and both slots are always written. Typical use: a decoy
+          secret in one slot and the real one in the other, each with its own
+          passphrase. Revealing one passphrase shows its slot, while the other
+          slot only shows meaningless bits, exactly as it would if it held
+          random fill. Limits: deniability holds only when the payloads look
+          random, such as one-time-pad shares or other encrypted data stored as
+          hex, since readable text identifies itself. Bits read with a
+          passphrase that was never used reflect the image's brightness (for
+          example mostly ones in a light image) rather than looking uniformly
+          random. The bitmap must have at least 128 + 2 × 264 = 656 pixels.
+          Resizing, recompressing or re-dithering the bitmap destroys the data.
         </p>
-      </form>
-      <form id="decryption-form" novalidate hidden>
-        <div class="field">
-          <label for="encrypted-content">
-            Encrypted content
-            <span class="field-help">Hexadecimal</span>
-          </label>
-          <div class="input-with-scan">
-            <textarea
-              id="encrypted-content"
-              name="encrypted-content"
-              placeholder="Paste encrypted hexadecimal content"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-              aria-describedby="decrypt-message"
-            ></textarea>
-            <button
-              class="scan-button"
-              type="button"
-              data-scan-target="encrypted-content"
-            >
-              Scan QR
-            </button>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="one-time-pad">
-            One-time pad encryption key
-            <span class="field-help">Hexadecimal</span>
-          </label>
-          <div class="input-with-scan">
-            <textarea
-              id="one-time-pad"
-              name="one-time-pad"
-              placeholder="Paste the matching one-time pad"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-              aria-describedby="decrypt-message"
-            ></textarea>
-            <button
-              class="scan-button"
-              type="button"
-              data-scan-target="one-time-pad"
-            >
-              Scan QR
-            </button>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button type="reset">Clear</button>
-          <button type="submit">Decrypt content</button>
-        </div>
-
-        <p
-          id="decrypt-message"
-          class="message"
-          role="alert"
-          aria-live="polite"
-        ></p>
-
-        <section id="result" class="result" aria-live="polite" hidden>
-          <div class="result-header">
-            <h2>Recovered content</h2>
-            <button id="copy-result" class="copy-result" type="button">
-              Copy
-            </button>
-          </div>
-          <pre id="recovered-content"></pre>
-        </section>
-      </form>
+      </details>
     </main>
-
-    <dialog id="qr-dialog" aria-labelledby="qr-title">
-      <div class="qr-header">
-        <h2 id="qr-title">QR code</h2>
-        <button class="close-qr" type="button" aria-label="Close QR code">
-          ×
-        </button>
-      </div>
-      <div class="qr-body">
-        <img id="qr-image" alt="" />
-        <p class="qr-note">
-          The QR payload uses uppercase hexadecimal for better capacity. It
-          represents the same bytes as the lowercase text.
-        </p>
-      </div>
-    </dialog>
-
-    <dialog id="scanner-dialog" aria-labelledby="scanner-title">
-      <div class="scanner-header">
-        <h2 id="scanner-title">Scan hexadecimal QR code</h2>
-        <button class="close-scanner" type="button" aria-label="Close camera">
-          ×
-        </button>
-      </div>
-      <div class="scanner-body">
-        <div class="camera-frame">
-          <video id="camera-preview" playsinline muted></video>
-        </div>
-        <p id="scanner-status" class="scanner-status" aria-live="polite">
-          Requesting camera access…
-        </p>
-      </div>
-    </dialog>
     <script>
       //---------------------------------------------------------------------
       //
@@ -3204,589 +3358,1017 @@
       });
     </script>
     <script>
-      (() => {
-        "use strict";
+      "use strict";
+      const BMP = Object.freeze({ headerBytes: 62, pixelsPerMetre: 2835 });
+      const KERNELS = Object.freeze({
+        floyd: {
+          divisor: 16,
+          taps: [
+            [1, 0, 7],
+            [-1, 1, 3],
+            [0, 1, 5],
+            [1, 1, 1],
+          ],
+        },
+        atkinson: {
+          divisor: 8,
+          taps: [
+            [1, 0, 1],
+            [2, 0, 1],
+            [-1, 1, 1],
+            [0, 1, 1],
+            [1, 1, 1],
+            [0, 2, 1],
+          ],
+        },
+      });
 
-        const MIN_INPUT_BYTES = 16;
-        const MAX_INPUT_BYTES = 65536;
-        const MAX_QR_ALPHANUMERIC_CHARACTERS = 4296;
-        const form = document.querySelector("#encryption-form");
-        const plaintextField = document.querySelector("#plaintext");
-        const byteCount = document.querySelector("#byte-count");
-        const message = document.querySelector("#form-message");
-        const results = document.querySelector("#results");
-        const ciphertextOutput = document.querySelector("#ciphertext");
-        const padOutput = document.querySelector("#pad");
-        const qrDialog = document.querySelector("#qr-dialog");
-        const qrTitle = document.querySelector("#qr-title");
-        const qrImage = document.querySelector("#qr-image");
-        const closeQrButton = document.querySelector(".close-qr");
-        const qrButtons = document.querySelectorAll(
-          "[data-show-qr], [data-download-qr]",
-        );
-        const encoder = new TextEncoder();
-
-        function toHex(bytes) {
-          return Array.from(bytes, (byte) =>
-            byte.toString(16).padStart(2, "0"),
-          ).join("");
+      // Rec. 709 luma of RGBA pixels composited over white, as floats 0–255.
+      function grayscale(rgba) {
+        const gray = new Float32Array(rgba.length >>> 2);
+        for (let p = 0; p < gray.length; p++) {
+          const o = p * 4,
+            alpha = rgba[o + 3] / 255;
+          const luma =
+            0.2126 * rgba[o] + 0.7152 * rgba[o + 1] + 0.0722 * rgba[o + 2];
+          gray[p] = luma * alpha + 255 * (1 - alpha);
         }
+        return gray;
+      }
+      // One value per pixel: 1 = white, 0 = black. Error diffusion runs left to right, top to bottom.
+      function monochrome(
+        gray,
+        width,
+        height,
+        { method = "floyd", threshold = 128, invert = false } = {},
+      ) {
+        if (gray.length !== width * height)
+          throw new Error("Pixel count does not match the image size.");
+        const bits = new Uint8Array(gray.length),
+          kernel = KERNELS[method];
+        if (!kernel && method !== "threshold")
+          throw new Error("Unknown conversion method.");
+        const work = kernel ? Float32Array.from(gray) : gray;
+        for (let y = 0; y < height; y++)
+          for (let x = 0; x < width; x++) {
+            const p = y * width + x,
+              value = work[p],
+              white = value >= threshold;
+            bits[p] = white !== invert ? 1 : 0;
+            if (!kernel) continue;
+            const error = (value - (white ? 255 : 0)) / kernel.divisor;
+            for (const [dx, dy, weight] of kernel.taps) {
+              const nx = x + dx,
+                ny = y + dy;
+              if (nx >= 0 && nx < width && ny < height)
+                work[ny * width + nx] += error * weight;
+            }
+          }
+        return bits;
+      }
+      function encodeBmp(bits, width, height) {
+        if (
+          !Number.isInteger(width) ||
+          !Number.isInteger(height) ||
+          width < 1 ||
+          height < 1
+        )
+          throw new Error("Invalid bitmap size.");
+        const stride = Math.ceil(width / 32) * 4,
+          size = BMP.headerBytes + stride * height;
+        if (size > 0xffffffff)
+          throw new Error("The bitmap is too large for the BMP format.");
+        const bytes = new Uint8Array(size),
+          view = new DataView(bytes.buffer);
+        bytes[0] = 66;
+        bytes[1] = 77;
+        view.setUint32(2, size, true);
+        view.setUint32(10, BMP.headerBytes, true);
+        view.setUint32(14, 40, true);
+        view.setInt32(18, width, true);
+        view.setInt32(22, height, true);
+        view.setUint16(26, 1, true);
+        view.setUint16(28, 1, true);
+        view.setUint32(30, 0, true);
+        view.setUint32(34, stride * height, true);
+        view.setInt32(38, BMP.pixelsPerMetre, true);
+        view.setInt32(42, BMP.pixelsPerMetre, true);
+        view.setUint32(46, 2, true);
+        view.setUint32(50, 2, true);
+        bytes.set([0, 0, 0, 0, 255, 255, 255, 0], 54);
+        for (let y = 0; y < height; y++) {
+          const row = BMP.headerBytes + (height - 1 - y) * stride;
+          for (let x = 0; x < width; x++)
+            if (bits[y * width + x]) bytes[row + (x >> 3)] |= 128 >> (x & 7);
+        }
+        return bytes;
+      }
+      // Fit within a width while keeping the aspect ratio; never returns a zero dimension.
+      function targetSize(width, height, requested) {
+        if (!requested) return { width, height };
+        const w = Math.round(requested);
+        if (!Number.isFinite(w) || w < 1 || w > 20000)
+          throw new Error("Width must be between 1 and 20,000 pixels.");
+        return {
+          width: w,
+          height: Math.max(1, Math.round((height * w) / width)),
+        };
+      }
 
-        function secureRandomBytes(length) {
-          if (!globalThis.crypto?.getRandomValues) {
+      // Hidden data: same salt / PBKDF2 / AES-CTR RNG / Fisher–Yates scattering as lsb-steganography.html, one bit per pixel.
+      // Two slots, each a 264-bit record with no header or checksum: payload, then random padding. Slot 0 uses even pool
+      // pixels and slot 1 odd ones, so they never collide; an unused slot is filled with random bits at random positions.
+      const HIDE = Object.freeze({
+        iterations: 600000,
+        saltBits: 128,
+        recordBits: 264,
+        slots: 2,
+        chunk: 4096,
+      });
+      const MIN_PIXELS = HIDE.saltBits + HIDE.slots * HIDE.recordBits;
+      const PAYLOAD = Object.freeze({ ascii: 0, hex: 1 });
+      const utf8 = new TextEncoder();
+
+      function payloadBits(text, type) {
+        let values, width;
+        if (type === PAYLOAD.ascii) {
+          values = Array.from(text, (char, i) => {
+            const code = char.charCodeAt(0);
+            if (char.length > 1 || code > 127)
+              throw new Error(
+                "Only ASCII characters are allowed. Character " +
+                  (i + 1) +
+                  " (" +
+                  JSON.stringify(char) +
+                  ") is not ASCII.",
+              );
+            return code;
+          });
+          width = 8;
+        } else if (type === PAYLOAD.hex) {
+          const digits = text.replace(/\s/g, "");
+          if (!/^[0-9a-fA-F]*$/.test(digits))
             throw new Error(
-              "This browser does not provide crypto.getRandomValues().",
+              "Hex input may contain only hexadecimal digits (0-9, a-f) and whitespace.",
             );
-          }
-
-          const bytes = new Uint8Array(length);
-          crypto.getRandomValues(bytes);
-          return bytes;
-        }
-
-        function clearOutput() {
-          ciphertextOutput.textContent = "";
-          padOutput.textContent = "";
-          results.hidden = true;
-          message.textContent = "";
-          message.classList.remove("success");
-          for (const button of qrButtons) button.disabled = true;
-        }
-
-        function updateByteCount() {
-          const length = encoder.encode(plaintextField.value).length;
-          byteCount.textContent = `${length.toLocaleString()} / ${MAX_INPUT_BYTES.toLocaleString()} bytes · minimum ${MIN_INPUT_BYTES}`;
-          byteCount.classList.toggle(
-            "limit",
-            length > 0 && length < MIN_INPUT_BYTES,
+          values = Array.from(digits, (d) => parseInt(d, 16));
+          width = 4;
+        } else throw new Error("Unknown payload type.");
+        if (!values.length) throw new Error("Enter data to hide.");
+        if (values.length * width > HIDE.recordBits)
+          throw new Error(
+            "Data is " +
+              values.length * width +
+              " bits; at most " +
+              HIDE.recordBits +
+              " bits fit (33 ASCII characters or 66 hex digits).",
           );
-        }
-
-        function limitInputBytes() {
-          if (encoder.encode(plaintextField.value).length <= MAX_INPUT_BYTES)
-            return false;
-
-          const acceptedCharacters = [];
-          let acceptedBytes = 0;
-          for (const character of plaintextField.value) {
-            const characterBytes = encoder.encode(character).length;
-            if (acceptedBytes + characterBytes > MAX_INPUT_BYTES) break;
-            acceptedCharacters.push(character);
-            acceptedBytes += characterBytes;
-          }
-          plaintextField.value = acceptedCharacters.join("");
-          return true;
-        }
-
-        async function copyText(value, button) {
-          try {
-            if (navigator.clipboard?.writeText) {
-              await navigator.clipboard.writeText(value);
-            } else {
-              const helper = document.createElement("textarea");
-              helper.value = value;
-              helper.style.position = "fixed";
-              helper.style.opacity = "0";
-              document.body.append(helper);
-              helper.select();
-              if (!document.execCommand("copy")) throw new Error("Copy failed");
-              helper.remove();
-            }
-            const original = button.textContent;
-            button.textContent = "Copied";
-            window.setTimeout(() => {
-              button.textContent = original;
-            }, 1200);
-          } catch {
-            message.textContent =
-              "Unable to copy automatically. Select the value and copy it manually.";
-          }
-        }
-
-        function downloadText(value, filename) {
-          const url = URL.createObjectURL(
-            new Blob([value + "\n"], { type: "text/plain;charset=us-ascii" }),
-          );
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = filename;
-          link.click();
-          URL.revokeObjectURL(url);
-        }
-
-        function createQrPng(hexValue) {
-          const qr = qrcode(0, "L");
-          qr.addData(hexValue.toUpperCase(), "Alphanumeric");
-          qr.make();
-
-          const quietZone = 4;
-          const moduleCount = qr.getModuleCount();
-          const cellSize = Math.max(
-            2,
-            Math.floor(1024 / (moduleCount + quietZone * 2)),
-          );
-          const size = (moduleCount + quietZone * 2) * cellSize;
-          const canvas = document.createElement("canvas");
-          canvas.width = size;
-          canvas.height = size;
-          const context = canvas.getContext("2d");
-          context.fillStyle = "#ffffff";
-          context.fillRect(0, 0, size, size);
-          context.fillStyle = "#000000";
-
-          for (let row = 0; row < moduleCount; row += 1) {
-            for (let column = 0; column < moduleCount; column += 1) {
-              if (qr.isDark(row, column)) {
-                context.fillRect(
-                  (column + quietZone) * cellSize,
-                  (row + quietZone) * cellSize,
-                  cellSize,
-                  cellSize,
-                );
-              }
-            }
-          }
-          return canvas.toDataURL("image/png");
-        }
-
-        function qrValue(type) {
-          return type === "ciphertext"
-            ? ciphertextOutput.textContent
-            : padOutput.textContent;
-        }
-
-        function qrLabel(type) {
-          return type === "ciphertext" ? "Encrypted content" : "One-time pad";
-        }
-
-        function updateQrAvailability(hexLength) {
-          const available = hexLength <= MAX_QR_ALPHANUMERIC_CHARACTERS;
-          for (const button of qrButtons) {
-            button.disabled = !available;
-            button.title = available
-              ? ""
-              : "This value is too large for one QR code.";
-          }
-          return available;
-        }
-
-        plaintextField.addEventListener("input", () => {
-          const wasTruncated = limitInputBytes();
-          if (!results.hidden) clearOutput();
-          updateByteCount();
-          if (wasTruncated) {
-            message.textContent = `Content is limited to ${MAX_INPUT_BYTES.toLocaleString()} UTF-8 bytes.`;
-          }
+        const bits = new Uint8Array(values.length * width);
+        values.forEach((v, i) => {
+          for (let b = 0; b < width; b++)
+            bits[i * width + b] = (v >> (width - 1 - b)) & 1;
         });
-
-        form.addEventListener("submit", (event) => {
-          event.preventDefault();
-          clearOutput();
-
-          try {
-            const plaintext = encoder.encode(plaintextField.value);
-            if (plaintext.length === 0)
-              throw new Error("Enter some content to encrypt.");
-            if (plaintext.length < MIN_INPUT_BYTES) {
-              throw new Error(
-                `Use at least ${MIN_INPUT_BYTES} UTF-8 bytes. A one-time pad cannot be cracked from the ciphertext alone, but a very small or predictable secret has too few possible values and may be guessed or brute-forced when an attacker can recognize the byte size of the secret.`,
-              );
-            }
-            if (plaintext.length > MAX_INPUT_BYTES)
-              throw new Error(
-                `Content must be no more than ${MAX_INPUT_BYTES.toLocaleString()} UTF-8 bytes.`,
-              );
-            const pad = secureRandomBytes(plaintext.length);
-            const ciphertext = new Uint8Array(plaintext.length);
-            for (let index = 0; index < plaintext.length; index += 1) {
-              ciphertext[index] = plaintext[index] ^ pad[index];
-            }
-
-            ciphertextOutput.textContent = toHex(ciphertext);
-            padOutput.textContent = toHex(pad);
-            results.hidden = false;
-            message.textContent =
-              "Encryption complete. Save the two values separately.";
-            message.classList.add("success");
-            if (!updateQrAvailability(ciphertextOutput.textContent.length)) {
-              window.alert(
-                "QR codes are unavailable for this result because a single QR code can hold at most 4,296 uppercase hexadecimal characters. The encrypted text and download options remain available.",
-              );
-            }
-          } catch (error) {
-            message.textContent =
-              error instanceof Error
-                ? error.message
-                : "Unable to encrypt this content.";
-          }
+        return bits;
+      }
+      function formatHex(bits) {
+        let out = "";
+        for (let i = 0; i + 4 <= bits.length; i += 4)
+          out += (
+            bits[i] * 8 +
+            bits[i + 1] * 4 +
+            bits[i + 2] * 2 +
+            bits[i + 3]
+          ).toString(16);
+        return out;
+      }
+      // 8 bits per character; bytes that are not printable ASCII, tab or line breaks show as a middle dot (never part of ASCII input).
+      function formatAscii(bits) {
+        let out = "";
+        for (let i = 0; i + 8 <= bits.length; i += 8) {
+          let v = 0;
+          for (let b = 0; b < 8; b++) v = v * 2 + bits[i + b];
+          out +=
+            (v >= 32 && v < 127) || v === 9 || v === 10 || v === 13
+              ? String.fromCharCode(v)
+              : "·";
+        }
+        return out;
+      }
+      function packBits(bits) {
+        const bytes = new Uint8Array(Math.ceil(bits.length / 8));
+        bits.forEach((bit, k) => {
+          if (bit) bytes[k >> 3] |= 128 >> (k & 7);
         });
-
-        for (const button of document.querySelectorAll("[data-copy]")) {
-          button.addEventListener("click", () => {
-            const value =
-              button.dataset.copy === "ciphertext"
-                ? ciphertextOutput.textContent
-                : padOutput.textContent;
-            copyText(value, button);
-          });
-        }
-
-        for (const button of document.querySelectorAll("[data-download]")) {
-          button.addEventListener("click", () => {
-            const type = button.dataset.download;
-            const value =
-              type === "ciphertext"
-                ? ciphertextOutput.textContent
-                : padOutput.textContent;
-            downloadText(
-              value,
-              type === "ciphertext"
-                ? "encrypted-content-hex.txt"
-                : "one-time-pad-hex.txt",
-            );
-          });
-        }
-
-        for (const button of document.querySelectorAll("[data-show-qr]")) {
-          button.addEventListener("click", () => {
-            const type = button.dataset.showQr;
-            qrTitle.textContent = `${qrLabel(type)} QR code`;
-            qrImage.src = createQrPng(qrValue(type));
-            qrImage.alt = `${qrLabel(type)} as a QR code`;
-            qrDialog.showModal();
-          });
-        }
-
-        for (const button of document.querySelectorAll("[data-download-qr]")) {
-          button.addEventListener("click", () => {
-            const type = button.dataset.downloadQr;
-            const link = document.createElement("a");
-            link.href = createQrPng(qrValue(type));
-            link.download =
-              type === "ciphertext"
-                ? "encrypted-content-qr.png"
-                : "one-time-pad-qr.png";
-            link.click();
-          });
-        }
-
-        closeQrButton.addEventListener("click", () => qrDialog.close());
-        qrDialog.addEventListener("close", () => {
-          qrImage.removeAttribute("src");
-          qrImage.alt = "";
-        });
-
-        form.addEventListener("reset", () =>
-          window.requestAnimationFrame(() => {
-            clearOutput();
-            updateByteCount();
-          }),
+        return bytes;
+      }
+      function unpackBits(bytes, count = bytes.length * 8) {
+        return Uint8Array.from(
+          { length: count },
+          (_, k) => (bytes[k >> 3] >> (7 - (k & 7))) & 1,
         );
+      }
+      function buildRecord(payload) {
+        if (payload.length > HIDE.recordBits)
+          throw new Error("At most " + HIDE.recordBits + " bits fit.");
+        const record = unpackBits(
+          crypto.getRandomValues(new Uint8Array(HIDE.recordBits / 8)),
+        );
+        record.set(payload);
+        return record;
+      }
 
-        window.addEventListener("pagehide", () => {
-          form.reset();
-          clearOutput();
-        });
-
-        updateByteCount();
-
-        document
-          .querySelector("#decryption-mode")
-          .addEventListener("click", () => {
-            if (form.hidden) return;
-            plaintextField.value = "";
-            clearOutput();
-            updateByteCount();
-            if (qrDialog.open) qrDialog.close();
-            qrImage.removeAttribute("src");
+      async function deriveSeed(passphrase, salt) {
+        if (!passphrase) throw new Error("Enter a passphrase.");
+        const material = await crypto.subtle.importKey(
+          "raw",
+          utf8.encode(passphrase),
+          "PBKDF2",
+          false,
+          ["deriveBits"],
+        );
+        return new Uint8Array(
+          await crypto.subtle.deriveBits(
+            {
+              name: "PBKDF2",
+              salt,
+              iterations: HIDE.iterations,
+              hash: "SHA-256",
+            },
+            material,
+            256,
+          ),
+        );
+      }
+      async function rngKey(seed) {
+        try {
+          return await crypto.subtle.importKey(
+            "raw",
+            seed,
+            { name: "AES-CTR" },
+            false,
+            ["encrypt"],
+          );
+        } finally {
+          seed.fill(0);
+        }
+      }
+      async function passphraseKey(passphrase, salt) {
+        return rngKey(await deriveSeed(passphrase, salt));
+      }
+      function randomKey() {
+        return rngKey(crypto.getRandomValues(new Uint8Array(32)));
+      }
+      // Deterministic bit source: AES-256-CTR keystream, consumed most significant bit first. The stream number fills the
+      // upper 64 bits of the counter block, so each slot gets an independent keystream from the same key.
+      class KeystreamRng {
+        constructor(key, stream = 0) {
+          this.key = key;
+          this.stream = stream;
+          this.block = 0;
+          this.buffer = new Uint8Array(0);
+          this.position = 0;
+          this.acc = 0;
+          this.accBits = 0;
+        }
+        async refill() {
+          const counter = new Uint8Array(16),
+            view = new DataView(counter.buffer);
+          view.setBigUint64(0, BigInt(this.stream));
+          view.setBigUint64(8, BigInt(this.block));
+          this.buffer = new Uint8Array(
+            await crypto.subtle.encrypt(
+              { name: "AES-CTR", counter, length: 64 },
+              this.key,
+              new Uint8Array(HIDE.chunk),
+            ),
+          );
+          this.block += HIDE.chunk / 16;
+          this.position = 0;
+        }
+        async bits(count) {
+          while (this.accBits < count) {
+            if (this.position >= this.buffer.length) await this.refill();
+            this.acc = this.acc * 256 + this.buffer[this.position++];
+            this.accBits += 8;
+          }
+          const rest = 2 ** (this.accBits - count),
+            value = Math.floor(this.acc / rest);
+          this.acc %= rest;
+          this.accBits -= count;
+          return value;
+        }
+        // Unbiased integer in [0, n): reads only the bits needed for n - 1 and rejects out-of-range values.
+        async uniform(n) {
+          if (n <= 1) return 0;
+          const width = 32 - Math.clz32(n - 1);
+          for (;;) {
+            const value = await this.bits(width);
+            if (value < n) return value;
+          }
+        }
+      }
+      // Partial Fisher–Yates shuffle over the pool, materializing only swapped positions.
+      class ScatterSampler {
+        constructor(rng, size) {
+          this.rng = rng;
+          this.size = size;
+          this.index = 0;
+          this.swaps = new Map();
+        }
+        async next() {
+          if (this.index >= this.size)
+            throw new Error(
+              "The bitmap does not have enough pixels for this data.",
+            );
+          const i = this.index++,
+            j = i + (await this.rng.uniform(this.size - i));
+          const atI = this.swaps.has(i) ? this.swaps.get(i) : i,
+            atJ = this.swaps.has(j) ? this.swaps.get(j) : j;
+          this.swaps.set(j, atI);
+          this.swaps.delete(i);
+          return atJ;
+        }
+      }
+      // Absolute pixel indices for one slot: Fisher–Yates over the pool pixels whose pool index has the slot's parity.
+      async function slotPositions(key, pixelCount, slot) {
+        if (pixelCount < MIN_PIXELS)
+          throw new Error(
+            "The bitmap needs at least " + MIN_PIXELS + " pixels to hide data.",
+          );
+        const pool = pixelCount - HIDE.saltBits,
+          sampler = new ScatterSampler(
+            new KeystreamRng(key, slot),
+            Math.floor((pool - slot + 1) / 2),
+          );
+        const positions = new Uint32Array(HIDE.recordBits);
+        for (let i = 0; i < positions.length; i++)
+          positions[i] = HIDE.saltBits + 2 * (await sampler.next()) + slot;
+        return positions;
+      }
+      // Substitutes the salt and each slot's record into a monochrome pixel array; returns how many pixels changed color.
+      function writeHidden(bits, salt, slots) {
+        const used = new Set();
+        for (const { positions } of slots)
+          for (const p of positions) used.add(p);
+        const overlap =
+          slots.reduce((n, { positions }) => n + positions.length, 0) -
+          used.size;
+        // Unreachable with the even/odd split, but never let one secret silently overwrite the other.
+        if (overlap)
+          throw new Error(
+            "The two secrets would share " +
+              overlap +
+              " pixel" +
+              (overlap > 1 ? "s" : "") +
+              ". Choose a different passphrase.",
+          );
+        let changed = 0;
+        const set = (p, v) => {
+          if (bits[p] !== v) {
+            bits[p] = v;
+            changed++;
+          }
+        };
+        unpackBits(salt).forEach((v, p) => set(p, v));
+        for (const { positions, record } of slots)
+          record.forEach((v, k) => set(positions[k], v));
+        return changed;
+      }
+      // secrets: up to two {payload, passphrase} entries; a missing or null entry leaves that slot as random fill.
+      async function hideInBitmap(
+        bits,
+        secrets,
+        salt = crypto.getRandomValues(new Uint8Array(HIDE.saltBits / 8)),
+      ) {
+        if (!secrets.some(Boolean))
+          throw new Error("Enter at least one secret.");
+        if (
+          secrets[0] &&
+          secrets[1] &&
+          secrets[0].passphrase === secrets[1].passphrase
+        )
+          throw new Error("Use a different passphrase for each secret.");
+        const slots = [];
+        for (let slot = 0; slot < HIDE.slots; slot++) {
+          const secret = secrets[slot],
+            key = secret
+              ? await passphraseKey(secret.passphrase, salt)
+              : await randomKey();
+          slots.push({
+            positions: await slotPositions(key, bits.length, slot),
+            record: buildRecord(secret ? secret.payload : new Uint8Array(0)),
           });
-      })();
+        }
+        return { changed: writeHidden(bits, salt, slots), slots };
+      }
+      // Data URLs and QR codes. Capacities are byte-mode characters at version 40.
+      const QR_CAPACITY = Object.freeze({ L: 2953, M: 2331, Q: 1663, H: 1273 });
+      function toBase64(bytes) {
+        let binary = "";
+        for (let i = 0; i < bytes.length; i += 32768)
+          binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
+        return btoa(binary);
+      }
+      function toDataUrl(mime, bytes) {
+        return "data:" + mime + ";base64," + toBase64(bytes);
+      }
+      function parseDataUrl(text) {
+        const match =
+          /^data:(image\/(?:webp|bmp|png));base64,([A-Za-z0-9+/]+={0,2})$/.exec(
+            text.replace(/\s/g, ""),
+          );
+        if (!match || match[2].length % 4)
+          throw new Error(
+            "Paste a complete data URL such as data:image/webp;base64,UklGR…",
+          );
+        return {
+          mime: match[1],
+          bytes: Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0)),
+        };
+      }
+      function makeQr(text, level) {
+        if (!(level in QR_CAPACITY))
+          throw new Error("Unknown QR error correction level.");
+        if (text.length > QR_CAPACITY[level])
+          throw new Error(
+            "The data URL is " +
+              text.length.toLocaleString() +
+              " characters, but a QR code at level " +
+              level +
+              " holds at most " +
+              QR_CAPACITY[level].toLocaleString() +
+              ". Reduce the width" +
+              (level === "L"
+                ? "."
+                : " or choose a lower error correction level."),
+          );
+        const qr = qrcode(0, level);
+        qr.addData(text, "Byte");
+        qr.make();
+        return qr;
+      }
+      // Reads both slots at the positions this passphrase selects. There is deliberately no way to tell a correct passphrase from a wrong one.
+      async function extractFromBitmap(bits, passphrase) {
+        if (bits.length < MIN_PIXELS)
+          throw new Error(
+            "The bitmap has fewer than " +
+              MIN_PIXELS +
+              " pixels, so it cannot hold hidden data.",
+          );
+        const key = await passphraseKey(
+          passphrase,
+          packBits(bits.subarray(0, HIDE.saltBits)),
+        );
+        const slots = [];
+        for (let slot = 0; slot < HIDE.slots; slot++) {
+          const record = Uint8Array.from(
+            await slotPositions(key, bits.length, slot),
+            (p) => bits[p],
+          );
+          slots.push({
+            bits: record,
+            hex: formatHex(record),
+            ascii: formatAscii(record),
+          });
+        }
+        return { slots };
+      }
     </script>
     <script>
-      (() => {
-        "use strict";
-
-        const form = document.querySelector("#decryption-form");
-        const encryptedContentField =
-          document.querySelector("#encrypted-content");
-        const oneTimePadField = document.querySelector("#one-time-pad");
-        const message = document.querySelector("#decrypt-message");
-        const result = document.querySelector("#result");
-        const recoveredContent = document.querySelector("#recovered-content");
-        const copyResultButton = document.querySelector("#copy-result");
-        const scannerDialog = document.querySelector("#scanner-dialog");
-        const scannerTitle = document.querySelector("#scanner-title");
-        const scannerStatus = document.querySelector("#scanner-status");
-        const cameraPreview = document.querySelector("#camera-preview");
-        const closeScannerButton = document.querySelector(".close-scanner");
-        const scanButtons = document.querySelectorAll("[data-scan-target]");
-        let cameraStream = null;
-        let scanTimer = null;
-        let scanTarget = null;
-        let scannerActive = false;
-
-        function parseHex(value, fieldName) {
-          const compactValue = value.replace(/[\u0009-\u000d\u0020]/g, "");
-
-          if (!/^[0-9a-fA-F]*$/.test(compactValue)) {
-            throw new Error(`${fieldName} is not a valid hexadecimal string.`);
+      "use strict";
+      const $ = (id) => document.getElementById(id);
+      const PHOTO_HINT = "On phones this also offers the camera.";
+      let lastExtract = null,
+        source = null,
+        downloadUrl = null,
+        qrUrl = null,
+        loadToken = 0,
+        renderToken = 0,
+        qrToken = 0,
+        pending = 0,
+        debounce = 0,
+        hideState = null;
+      const SECRETS = [1, 2];
+      function clearQr() {
+        qrToken++;
+        if (qrUrl) URL.revokeObjectURL(qrUrl);
+        qrUrl = null;
+        $("qr-download").removeAttribute("href");
+        $("qr-download").hidden = true;
+        $("qr-preview").hidden = true;
+        $("qr-info").textContent = "";
+      }
+      function clearResult() {
+        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+        downloadUrl = null;
+        $("download").removeAttribute("href");
+        $("result").hidden = true;
+        clearQr();
+        $("dataurl").value = "";
+        $("dataurl-panel").hidden = true;
+        $("extract-result").hidden = true;
+        $("output-1").value = $("output-2").value = "";
+        lastExtract = null;
+        $("status").textContent = "";
+      }
+      function options() {
+        return {
+          method: document.querySelector("input[name=method]:checked").value,
+          threshold: Number($("threshold").value),
+          invert: $("invert").checked,
+        };
+      }
+      function payloadType(n) {
+        return $("hex-mode-" + n).checked ? PAYLOAD.hex : PAYLOAD.ascii;
+      }
+      function baseName(name) {
+        return (
+          name.replace(/\.[^.]*$/, "").replace(/[\\/\x00-\x1f\x7f]/g, "_") ||
+          "photo"
+        );
+      }
+      function pixelsAt(width, height) {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context)
+          throw new Error(
+            "Canvas is unavailable or the image is too large for this browser.",
+          );
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = "high";
+        context.drawImage(source.bitmap, 0, 0, width, height);
+        return context.getImageData(0, 0, width, height).data;
+      }
+      function updatePayloadInfo() {
+        for (const n of SECRETS) {
+          const info = $("payload-info-" + n),
+            text = $("payload-" + n).value;
+          $("payload-label-" + n).textContent = $("hex-mode-" + n).checked
+            ? "Hex digits to hide"
+            : "ASCII text to hide";
+          if (!text) {
+            info.textContent =
+              n === 1
+                ? "Up to 264 bits: 33 ASCII characters or 66 hex digits."
+                : "Up to 264 bits. When empty, this slot is filled with random bits.";
+            continue;
           }
-
-          if (compactValue.length % 2 !== 0) {
-            throw new Error(
-              `${fieldName} must contain an even number of hexadecimal characters.`,
-            );
-          }
-
-          const bytes = new Uint8Array(compactValue.length / 2);
-          for (let index = 0; index < bytes.length; index += 1) {
-            bytes[index] = Number.parseInt(
-              compactValue.slice(index * 2, index * 2 + 2),
-              16,
-            );
-          }
-          return bytes;
-        }
-
-        function clearOutput() {
-          message.textContent = "";
-          message.classList.remove("success");
-          recoveredContent.textContent = "";
-          result.hidden = true;
-        }
-
-        async function copyRecoveredText() {
           try {
-            if (navigator.clipboard?.writeText) {
-              await navigator.clipboard.writeText(recoveredContent.textContent);
-            } else {
-              const helper = document.createElement("textarea");
-              helper.value = recoveredContent.textContent;
-              helper.style.position = "fixed";
-              helper.style.opacity = "0";
-              document.body.append(helper);
-              helper.select();
-              if (!document.execCommand("copy")) throw new Error("Copy failed");
-              helper.remove();
-            }
-
-            copyResultButton.textContent = "Copied";
-            window.setTimeout(() => {
-              copyResultButton.textContent = "Copy";
-            }, 1200);
-          } catch {
-            message.textContent =
-              "Unable to copy automatically. Select the recovered text and copy it manually.";
-            message.classList.remove("success");
-          }
-        }
-
-        let scanGeneration = 0;
-
-        function stopScanner({ closeDialog = true } = {}) {
-          scanGeneration += 1;
-          scannerActive = false;
-          window.clearTimeout(scanTimer);
-          scanTimer = null;
-
-          if (cameraStream) {
-            for (const track of cameraStream.getTracks()) {
-              track.stop();
-            }
-          }
-
-          cameraStream = null;
-          cameraPreview.srcObject = null;
-
-          if (closeDialog && scannerDialog.open) {
-            scannerDialog.close();
-          }
-        }
-
-        async function scanFrame(detector) {
-          if (!scannerActive) {
-            return;
-          }
-
-          try {
-            const barcodes = await detector.detect(cameraPreview);
-            const qrCode = barcodes.find((barcode) => barcode.rawValue);
-
-            if (qrCode) {
-              parseHex(qrCode.rawValue, "Scanned QR code");
-              scanTarget.value = qrCode.rawValue;
-              const completedTarget = scanTarget;
-              stopScanner();
-              clearOutput();
-              message.textContent = "QR code scanned successfully.";
-              message.classList.add("success");
-              completedTarget.focus();
-              return;
-            }
+            const used = payloadBits(text, payloadType(n)).length;
+            info.textContent =
+              used +
+              " of 264 bits" +
+              (used < 264
+                ? "; the remaining " +
+                  (264 - used) +
+                  " bits are filled with random bits."
+                : ".");
           } catch (error) {
-            if (
-              error instanceof Error &&
-              error.message.startsWith("Scanned QR code")
-            ) {
-              scannerStatus.textContent = error.message;
-            }
-          }
-
-          scanTimer = window.setTimeout(() => scanFrame(detector), 150);
-        }
-
-        async function openScanner(target) {
-          clearOutput();
-          const currentScan = ++scanGeneration;
-
-          if (!("BarcodeDetector" in window)) {
-            message.textContent =
-              "QR scanning is not supported by this browser. Use a current Chromium-based browser or paste the hexadecimal value.";
-            return;
-          }
-
-          if (!navigator.mediaDevices?.getUserMedia) {
-            message.textContent =
-              "Camera access is not available. Open this page in a secure browser context or paste the hexadecimal value.";
-            return;
-          }
-
-          scanTarget = target;
-          scannerTitle.textContent = `Scan ${target === encryptedContentField ? "encrypted content" : "one-time pad"} QR code`;
-          scannerStatus.textContent = "Requesting camera access…";
-          scannerDialog.showModal();
-
-          try {
-            const supportedFormats =
-              await BarcodeDetector.getSupportedFormats();
-            if (currentScan !== scanGeneration) return;
-            if (!supportedFormats.includes("qr_code")) {
-              throw new Error("This browser cannot detect QR codes.");
-            }
-
-            const detector = new BarcodeDetector({ formats: ["qr_code"] });
-            const stream = await navigator.mediaDevices.getUserMedia({
-              audio: false,
-              video: { facingMode: { ideal: "environment" } },
-            });
-            if (currentScan !== scanGeneration) {
-              for (const track of stream.getTracks()) track.stop();
-              return;
-            }
-            cameraStream = stream;
-            cameraPreview.srcObject = cameraStream;
-            await cameraPreview.play();
-            if (currentScan !== scanGeneration) return;
-            scannerStatus.textContent = "Place the QR code inside the frame.";
-            scannerActive = true;
-            await scanFrame(detector);
-          } catch (error) {
-            if (currentScan !== scanGeneration) return;
-            stopScanner();
-            message.textContent =
-              error instanceof Error
-                ? `Unable to scan: ${error.message}`
-                : "Unable to open the camera.";
+            info.textContent = error.message;
           }
         }
-
-        for (const button of scanButtons) {
-          button.addEventListener("click", () => {
-            const target = document.querySelector(
-              `#${button.dataset.scanTarget}`,
-            );
-            openScanner(target);
+      }
+      function readSecret(n) {
+        const text = $("payload-" + n).value;
+        if (!text) return null;
+        try {
+          const payload = payloadBits(text, payloadType(n)),
+            passphrase = $("passphrase-" + n).value;
+          if (!passphrase)
+            throw new Error("Enter a passphrase, or clear the data.");
+          if (passphrase !== $("confirm-" + n).value)
+            throw new Error("Passphrases do not match.");
+          return { payload, passphrase };
+        } catch (error) {
+          throw new Error("Secret " + n + ": " + error.message);
+        }
+      }
+      // Returns null for a plain bitmap. The salt and derived keys are kept until the photo changes or the form is cleared,
+      // so only a changed passphrase triggers PBKDF2 again; an empty slot reuses one random key.
+      async function hiddenPlan(pixelCount) {
+        const secrets = SECRETS.map(readSecret);
+        if (!secrets.some(Boolean)) return null;
+        if (
+          secrets[0] &&
+          secrets[1] &&
+          secrets[0].passphrase === secrets[1].passphrase
+        )
+          throw new Error("Use a different passphrase for each secret.");
+        if (pixelCount < MIN_PIXELS)
+          throw new Error(
+            "The bitmap needs at least " +
+              MIN_PIXELS +
+              " pixels to hide data. Increase the width.",
+          );
+        const state = (hideState ??= {
+          salt: crypto.getRandomValues(new Uint8Array(HIDE.saltBits / 8)),
+          keys: new Map(),
+          random: [],
+        });
+        const slots = [];
+        for (let slot = 0; slot < HIDE.slots; slot++) {
+          const secret = secrets[slot];
+          let key;
+          if (secret) {
+            key = state.keys.get(secret.passphrase);
+            if (!key) {
+              $("status").textContent = "Deriving key…";
+              key = await passphraseKey(secret.passphrase, state.salt);
+              state.keys.set(secret.passphrase, key);
+            }
+          } else key = state.random[slot] ??= await randomKey();
+          slots.push({
+            positions: await slotPositions(key, pixelCount, slot),
+            record: buildRecord(secret ? secret.payload : new Uint8Array(0)),
           });
         }
-
-        closeScannerButton.addEventListener("click", () => stopScanner());
-        copyResultButton.addEventListener("click", copyRecoveredText);
-
-        scannerDialog.addEventListener("cancel", (event) => {
-          event.preventDefault();
-          stopScanner();
-        });
-
-        scannerDialog.addEventListener("close", () => {
-          stopScanner({ closeDialog: false });
-        });
-
-        form.addEventListener("submit", (event) => {
-          event.preventDefault();
-          clearOutput();
-
-          try {
-            const encryptedContent = parseHex(
-              encryptedContentField.value,
-              "Encrypted content",
+        return {
+          salt: state.salt,
+          slots,
+          used: secrets.map((secret) => (secret ? secret.payload.length : 0)),
+        };
+      }
+      async function render() {
+        pending = 0;
+        clearTimeout(debounce);
+        const token = ++renderToken;
+        if (!source || $("extract").checked) return;
+        clearResult();
+        try {
+          const size = targetSize(
+            source.bitmap.width,
+            source.bitmap.height,
+            $("width").value ? Number($("width").value) : 0,
+          );
+          if (
+            !source.gray ||
+            source.gray.width !== size.width ||
+            source.gray.height !== size.height
+          )
+            source.gray = {
+              ...size,
+              values: grayscale(pixelsAt(size.width, size.height)),
+            };
+          const bits = monochrome(
+            source.gray.values,
+            size.width,
+            size.height,
+            options(),
+          );
+          const plan = await hiddenPlan(bits.length);
+          if (token !== renderToken) return;
+          const changed = plan ? writeHidden(bits, plan.salt, plan.slots) : 0;
+          const canvas = $("preview");
+          canvas.width = size.width;
+          canvas.height = size.height;
+          const image = new ImageData(size.width, size.height);
+          for (let p = 0; p < bits.length; p++) {
+            const v = bits[p] ? 255 : 0;
+            image.data[p * 4] =
+              image.data[p * 4 + 1] =
+              image.data[p * 4 + 2] =
+                v;
+            image.data[p * 4 + 3] = 255;
+          }
+          canvas.getContext("2d").putImageData(image, 0, 0);
+          const webp = $("webp-format").checked;
+          const file = webp
+            ? await encodeLosslessWebp(canvas, bits)
+            : new Blob([encodeBmp(bits, size.width, size.height)], {
+                type: "image/bmp",
+              });
+          if (token !== renderToken) return;
+          downloadUrl = URL.createObjectURL(file);
+          $("download").href = downloadUrl;
+          $("download").download =
+            baseName(source.name) + "-mono." + (webp ? "webp" : "bmp");
+          $("download").textContent = "Download " + $("download").download;
+          $("result-info").textContent =
+            size.width +
+            " × " +
+            size.height +
+            " pixels · " +
+            (webp ? "lossless WebP" : "BMP") +
+            " " +
+            file.size.toLocaleString() +
+            " bytes · 1 bit per pixel" +
+            (plan
+              ? " · " +
+                plan.used
+                  .map(
+                    (used, i) =>
+                      "secret " +
+                      (i + 1) +
+                      ": " +
+                      (used ? used + " bits" : "random fill"),
+                  )
+                  .join(", ") +
+                " · " +
+                changed +
+                " pixels changed (salt included)."
+              : " · no hidden data.");
+          if (webp) {
+            $("dataurl").value = toDataUrl(
+              "image/webp",
+              new Uint8Array(await file.arrayBuffer()),
             );
-            const oneTimePad = parseHex(
-              oneTimePadField.value,
-              "One-time pad encryption key",
-            );
-
-            if (encryptedContent.length !== oneTimePad.length) {
-              throw new Error(
-                "Encrypted content and one-time pad must contain the same number of bytes.",
+            if (token !== renderToken) return;
+            $("dataurl-info").textContent =
+              $("dataurl").value.length.toLocaleString() + " characters.";
+            $("dataurl-panel").hidden = false;
+            drawQr();
+          }
+          $("status").textContent = "";
+          $("result").hidden = false;
+        } catch (error) {
+          if (token === renderToken) {
+            clearResult();
+            $("status").textContent = error.message || "Conversion failed.";
+          }
+        }
+      }
+      // Canvas WebP at quality 1 is lossless in Chromium; other browsers may return PNG or a lossy image, so verify by decoding.
+      async function encodeLosslessWebp(canvas, bits) {
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/webp", 1),
+        );
+        if (!blob || blob.type !== "image/webp")
+          throw new Error(
+            "This browser cannot encode WebP. Use a Chromium-based browser such as Chrome or Edge, or choose BMP.",
+          );
+        const decoded = await readBitmapBits(blob);
+        if (
+          decoded.width !== canvas.width ||
+          decoded.height !== canvas.height ||
+          decoded.bits.some((b, i) => b !== bits[i])
+        )
+          throw new Error(
+            "This browser produced a lossy WebP, which would change pixels. Use a Chromium-based browser such as Chrome or Edge, or choose BMP.",
+          );
+        return blob;
+      }
+      function drawQr() {
+        clearQr();
+        const text = $("dataurl").value,
+          level = $("qr-level").value,
+          token = qrToken;
+        if (!text) return;
+        let qr;
+        try {
+          qr = makeQr(text, level);
+        } catch (error) {
+          $("qr-info").textContent = error.message;
+          return;
+        }
+        const count = qr.getModuleCount(),
+          quiet = 4,
+          cell = Math.max(2, Math.floor(1024 / (count + quiet * 2))),
+          size = (count + quiet * 2) * cell;
+        const canvas = $("qr-preview");
+        canvas.width = canvas.height = size;
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, size, size);
+        context.fillStyle = "#000";
+        for (let row = 0; row < count; row++)
+          for (let column = 0; column < count; column++)
+            if (qr.isDark(row, column))
+              context.fillRect(
+                (column + quiet) * cell,
+                (row + quiet) * cell,
+                cell,
+                cell,
               );
-            }
-
-            const recoveredBytes = new Uint8Array(encryptedContent.length);
-            for (let index = 0; index < encryptedContent.length; index += 1) {
-              recoveredBytes[index] =
-                encryptedContent[index] ^ oneTimePad[index];
-            }
-
-            const decodedValue = new TextDecoder("utf-8", {
-              fatal: true,
-            }).decode(recoveredBytes);
-            recoveredContent.textContent = decodedValue;
-            result.hidden = false;
-          } catch (error) {
-            if (error instanceof TypeError) {
-              message.textContent = "Recovered content is not valid UTF-8.";
-            } else {
-              message.textContent = error.message;
-            }
+        canvas.hidden = false;
+        $("qr-info").textContent =
+          "Version " +
+          (count - 17) / 4 +
+          " · " +
+          count +
+          " × " +
+          count +
+          " modules · level " +
+          level +
+          " · " +
+          text.length.toLocaleString() +
+          " of " +
+          QR_CAPACITY[level].toLocaleString() +
+          " characters.";
+        canvas.toBlob((blob) => {
+          if (!blob || token !== qrToken) return;
+          qrUrl = URL.createObjectURL(blob);
+          $("qr-download").href = qrUrl;
+          $("qr-download").download =
+            baseName(source?.name || "bitmap") + "-qr-" + level + ".png";
+          $("qr-download").textContent = "Download QR code (PNG)";
+          $("qr-download").hidden = false;
+        }, "image/png");
+      }
+      function schedule() {
+        if (!pending) pending = requestAnimationFrame(render);
+      }
+      function scheduleTyping() {
+        clearTimeout(debounce);
+        clearResult();
+        debounce = setTimeout(schedule, 400);
+      }
+      async function loadImage() {
+        const file = $("image").files[0],
+          token = ++loadToken;
+        source?.bitmap.close();
+        source = null;
+        hideState = null;
+        clearResult();
+        $("image-info").textContent = file ? "Reading photo…" : PHOTO_HINT;
+        if (!file) return;
+        try {
+          const bitmap = await createImageBitmap(file);
+          if (token !== loadToken) {
+            bitmap.close();
+            return;
           }
-        });
-
-        form.addEventListener("reset", () => {
-          window.requestAnimationFrame(clearOutput);
-        });
-
-        window.addEventListener("pagehide", () => {
-          stopScanner();
-          form.reset();
-          clearOutput();
-        });
-
-        encryptedContentField.addEventListener("input", clearOutput);
-        oneTimePadField.addEventListener("input", clearOutput);
-        document
-          .querySelector("#encryption-mode")
-          .addEventListener("click", () => {
-            if (form.hidden) return;
-            stopScanner();
-            encryptedContentField.value = "";
-            oneTimePadField.value = "";
-            clearOutput();
-          });
-      })();
-      (() => {
-        const encrypt = document.querySelector("#encryption-form");
-        const decrypt = document.querySelector("#decryption-form");
-        const encryptButton = document.querySelector("#encryption-mode");
-        const decryptButton = document.querySelector("#decryption-mode");
-        function selectMode(decryption) {
-          encrypt.hidden = decryption;
-          decrypt.hidden = !decryption;
-          encryptButton.setAttribute("aria-pressed", String(!decryption));
-          decryptButton.setAttribute("aria-pressed", String(decryption));
+          source = { name: file.name, bitmap, gray: null };
+          $("image-info").textContent =
+            "Original: " + bitmap.width + " × " + bitmap.height + " pixels.";
+          render();
+        } catch {
+          if (token === loadToken)
+            $("image-info").textContent =
+              "This file could not be decoded as an image.";
         }
-        encryptButton.addEventListener("click", () => selectMode(false));
-        decryptButton.addEventListener("click", () => selectMode(true));
-      })();
+      }
+      // Decodes a lossless bitmap back to one bit per pixel (1 = white).
+      async function readBitmapBits(file) {
+        let bitmap;
+        try {
+          bitmap = await createImageBitmap(file, {
+            premultiplyAlpha: "none",
+            colorSpaceConversion: "none",
+          });
+        } catch {
+          throw new Error("This file could not be decoded as an image.");
+        }
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          context.drawImage(bitmap, 0, 0);
+          const data = context.getImageData(
+              0,
+              0,
+              bitmap.width,
+              bitmap.height,
+            ).data,
+            bits = new Uint8Array(data.length >>> 2);
+          for (let p = 0; p < bits.length; p++)
+            bits[p] =
+              data[p * 4] + data[p * 4 + 1] + data[p * 4 + 2] >= 384 ? 1 : 0;
+          return { bits, width: bitmap.width, height: bitmap.height };
+        } finally {
+          bitmap.close();
+        }
+      }
+      function showExtract() {
+        if (!lastExtract) return;
+        const ascii = $("view-ascii").checked;
+        lastExtract.slots.forEach((slot, i) => {
+          $("output-" + (i + 1)).value = ascii ? slot.ascii : slot.hex;
+          $("output-label-" + (i + 1)).textContent =
+            "Slot " +
+            (i + 1) +
+            (ascii
+              ? " as ASCII text (33 characters; · marks bytes that are not printable ASCII)"
+              : " as hex digits (66 digits)");
+        });
+      }
+      function updateOperation() {
+        const extract = $("extract").checked;
+        renderToken++;
+        clearResult();
+        $("create-panel").hidden = extract;
+        $("extract-panel").hidden = !extract;
+        $("extract-button").hidden = !extract;
+        if (!extract) render();
+      }
+
+      $("create").addEventListener("change", updateOperation);
+      $("extract").addEventListener("change", updateOperation);
+      $("image").addEventListener("change", loadImage);
+      for (const id of [
+        "floyd",
+        "atkinson",
+        "threshold-mode",
+        "invert",
+        "width",
+        "bmp-format",
+        "webp-format",
+      ])
+        $(id).addEventListener("change", schedule);
+      $("threshold").addEventListener("input", () => {
+        $("threshold-value").textContent = $("threshold").value;
+        schedule();
+      });
+      $("width").addEventListener("input", schedule);
+      for (const n of SECRETS) {
+        for (const id of ["ascii-mode-" + n, "hex-mode-" + n])
+          $(id).addEventListener("change", () => {
+            updatePayloadInfo();
+            schedule();
+          });
+        $("payload-" + n).addEventListener("input", () => {
+          updatePayloadInfo();
+          scheduleTyping();
+        });
+        for (const id of ["passphrase-" + n, "confirm-" + n])
+          $(id).addEventListener("input", scheduleTyping);
+      }
+      $("show-passphrase").addEventListener("change", () => {
+        for (const n of SECRETS)
+          for (const id of ["passphrase-" + n, "confirm-" + n])
+            $(id).type = $("show-passphrase").checked ? "text" : "password";
+      });
+      $("show-extract-passphrase").addEventListener("change", () => {
+        $("extract-passphrase").type = $("show-extract-passphrase").checked
+          ? "text"
+          : "password";
+      });
+      for (const id of ["bitmap", "extract-passphrase", "extract-dataurl"])
+        $(id).addEventListener("input", clearResult);
+      $("qr-level").addEventListener("change", drawQr);
+      for (const id of ["view-hex", "view-ascii"])
+        $(id).addEventListener("change", showExtract);
+      $("copy").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText($("dataurl").value);
+        } catch {
+          $("dataurl").select();
+          document.execCommand("copy");
+        }
+        $("copy").textContent = "Copied";
+        setTimeout(() => {
+          $("copy").textContent = "Copy data URL";
+        }, 1500);
+      });
+      $("form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!$("extract").checked) return;
+        clearResult();
+        $("controls").disabled = true;
+        $("status").textContent = "Deriving key and extracting…";
+        try {
+          if (!globalThis.crypto?.subtle)
+            throw new Error(
+              "Web Crypto is unavailable. Open this page in a modern browser using a local file or HTTPS.",
+            );
+          const pasted = $("extract-dataurl").value.trim(),
+            passphrase = $("extract-passphrase").value;
+          let file = $("bitmap").files[0];
+          if (pasted) {
+            const parsed = parseDataUrl(pasted);
+            file = new Blob([parsed.bytes], { type: parsed.mime });
+          }
+          if (!file)
+            throw new Error("Select a bitmap or paste a data URL first.");
+          if (!passphrase) throw new Error("Enter the passphrase.");
+          const result = await extractFromBitmap(
+            (await readBitmapBits(file)).bits,
+            passphrase,
+          );
+          lastExtract = result;
+          showExtract();
+          $("extract-result").hidden = false;
+          $("status").textContent = "";
+        } catch (error) {
+          clearResult();
+          $("status").textContent = error.message || "Extraction failed.";
+        } finally {
+          $("controls").disabled = false;
+        }
+      });
+      $("clear").addEventListener("click", () => {
+        $("form").reset();
+        $("threshold-value").textContent = $("threshold").value;
+        for (const id of [
+          "passphrase-1",
+          "confirm-1",
+          "passphrase-2",
+          "confirm-2",
+          "extract-passphrase",
+        ])
+          $(id).type = "password";
+        loadToken++;
+        source?.bitmap.close();
+        source = null;
+        hideState = null;
+        $("image-info").textContent = PHOTO_HINT;
+        updatePayloadInfo();
+        updateOperation();
+      });
+      window.addEventListener("pagehide", clearResult);
+      updatePayloadInfo();
     </script>
   </body>
 </html>
