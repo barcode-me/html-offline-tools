@@ -1,0 +1,2001 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Obfuscated PDF documents</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --background: #090b0a;
+        --surface: #141816;
+        --surface-raised: #1a201d;
+        --border: #303832;
+        --text: #f2f4ef;
+        --muted: #a7b0a9;
+        --accent: #f2a900;
+        --accent-hover: #ffbd2e;
+        --error: #ff8c82;
+        --success: #89d99d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 32px 18px;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 50% 0%, #f2a90018, transparent 34rem),
+          var(--background);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        width: min(820px, 100%);
+        margin: 0 auto;
+      }
+      header {
+        margin: 30px 0 28px;
+      }
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent);
+        font-size: 0.76rem;
+        font-weight: 750;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 7vw, 3.7rem);
+        line-height: 1;
+        letter-spacing: -0.055em;
+      }
+      h2 {
+        margin-top: 0;
+        font-size: 1.2rem;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .intro {
+        max-width: 650px;
+        margin: 16px 0 0;
+        line-height: 1.65;
+      }
+      .card {
+        padding: clamp(20px, 4vw, 34px);
+        margin: 24px 0;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface);
+      }
+      form.card {
+        box-shadow: 0 24px 80px #00000047;
+      }
+      fieldset {
+        min-width: 0;
+        border: 0;
+        padding: 0;
+        margin: 0 0 24px;
+      }
+      #controls {
+        margin-bottom: 0;
+      }
+      legend,
+      .label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 700;
+      }
+      .choices {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .choices label,
+      .show {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      input {
+        max-width: 100%;
+      }
+      input[type="radio"],
+      input[type="checkbox"] {
+        accent-color: var(--accent);
+      }
+      input[type="password"],
+      input[type="text"],
+      select,
+      textarea {
+        display: block;
+        width: 100%;
+        padding: 14px 15px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        background: #0e110f;
+        font: inherit;
+      }
+      textarea {
+        min-height: 170px;
+        resize: vertical;
+        overflow-wrap: anywhere;
+        font:
+          0.88rem/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Monaco,
+          Consolas,
+          monospace;
+      }
+      input[type="file"] {
+        width: 100%;
+        color: var(--muted);
+        font:
+          0.9rem system-ui,
+          sans-serif;
+      }
+      button,
+      .download,
+      input::file-selector-button {
+        display: inline-block;
+        min-height: 46px;
+        padding: 12px 18px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        color: var(--text);
+        background: var(--surface-raised);
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 750;
+        cursor: pointer;
+        text-decoration: none;
+        overflow-wrap: anywhere;
+      }
+      input::file-selector-button {
+        margin-right: 12px;
+      }
+      button:hover,
+      .download:hover,
+      input::file-selector-button:hover {
+        border-color: #4a554e;
+      }
+      button[type="submit"],
+      .download {
+        color: #17130a;
+        background: var(--accent);
+        border-color: transparent;
+      }
+      button[type="submit"]:hover,
+      .download:hover {
+        background: var(--accent-hover);
+      }
+      button[type="submit"] {
+        flex: 1;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 24px;
+      }
+      .password,
+      .section {
+        margin-top: 24px;
+      }
+      .show {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .muted {
+        font-size: 0.85rem;
+      }
+      #status {
+        white-space: pre-wrap;
+        color: var(--error);
+        font-size: 0.9rem;
+      }
+      #status.success {
+        color: var(--success);
+      }
+      #capacity.over {
+        color: var(--error);
+      }
+      #preview {
+        display: block;
+        max-width: 100%;
+        max-height: 360px;
+        margin-top: 18px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #0e110f;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 700;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.85rem;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid var(--border);
+        overflow-wrap: anywhere;
+      }
+      code {
+        color: var(--accent);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      /* Shared offline-tools navigation; embedded to keep every page standalone. */
+      .tools-menu {
+        margin: 0 0 24px;
+        padding: 0;
+        border: 1px solid #303832;
+        border-radius: 12px;
+        background: #141816;
+        color: #f2f4ef;
+      }
+      .tools-menu > summary {
+        padding: 14px 18px;
+        color: #f2a900;
+        cursor: pointer;
+        font:
+          700 0.9rem/1.5 system-ui,
+          sans-serif;
+      }
+      .tools-menu > summary:focus-visible,
+      .tools-menu a:focus-visible {
+        outline: 2px solid #f2a900;
+        outline-offset: 3px;
+      }
+      .tools-menu nav {
+        display: block;
+        margin: 0;
+        padding: 0 12px 12px;
+        border: 0;
+        background: transparent;
+      }
+      .tools-menu ul {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .tools-menu li {
+        margin: 0;
+        padding: 0;
+      }
+      .tools-menu a {
+        display: block;
+        padding: 10px 12px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: #f2f4ef;
+        font:
+          500 0.88rem/1.5 system-ui,
+          sans-serif;
+        text-decoration: none;
+        overflow-wrap: anywhere;
+      }
+      .tools-menu a:hover {
+        background: #1a201d;
+        border-color: #4a554e;
+      }
+      .tools-menu a[aria-current="page"] {
+        color: #f2a900;
+        background: #f2a90014;
+        border-color: #f2a90055;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <details class="tools-menu">
+        <summary>Tools menu</summary>
+        <nav aria-label="Offline tools">
+          <ul>
+            <li>
+              <a href="./diceware-passphrase.html">Diceware passphrases</a>
+            </li>
+            <li>
+              <a href="./bip39-seed-generator.html">BIP39 seed generator</a>
+            </li>
+            <li>
+              <a href="./yeti-encoder-decoder.html">Yeti encoder / decoder</a>
+            </li>
+            <li><a href="./qr-file-transfer.html">QR file transfer</a></li>
+            <li>
+              <a href="./nfc-card-reader-writer.html"
+                >NFC card reader / writer</a
+              >
+            </li>
+            <li>
+              <a href="./secure-file-encryption.html">Secure file encryption</a>
+            </li>
+            <li><a href="./password-manager.html">Passwords and TOTP</a></li>
+            <li>
+              <a href="./one-time-pad-encryption.html"
+                >One-time pad encryption</a
+              >
+            </li>
+            <li>
+              <a href="./seed-one-time-pad-encryption.html"
+                >Seed one-time pad encryption</a
+              >
+            </li>
+            <li>
+              <a href="./lsb-steganography.html">LSB image steganography</a>
+            </li>
+            <li><a href="./monochrome-bitmap.html">Monochrome bitmap</a></li>
+            <li>
+              <a href="./obfuscated-pdf.html" aria-current="page"
+                >Obfuscated PDF documents</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </details>
+
+      <header>
+        <p class="eyebrow">Offline tools</p>
+        <h1>Obfuscated PDF documents</h1>
+        <p class="intro">
+          Turn ASCII text or hex bytes into an ordinary-looking PDF, such as a
+          math exercise whose large numbers carry your data. Restore mode puts
+          the numbers back together. Everything runs locally in your browser;
+          nothing is uploaded or saved by the page.
+        </p>
+      </header>
+      <form id="form" class="card">
+        <fieldset id="controls">
+          <fieldset>
+            <legend>Operation</legend>
+            <div class="choices">
+              <label
+                ><input
+                  type="radio"
+                  name="operation"
+                  id="create"
+                  value="create"
+                  checked
+                />
+                Create PDF</label
+              ><label
+                ><input
+                  type="radio"
+                  name="operation"
+                  id="restore"
+                  value="restore"
+                />
+                Restore data</label
+              >
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend id="format-legend">Input format</legend>
+            <div class="choices">
+              <label
+                ><input
+                  type="radio"
+                  name="format"
+                  id="ascii-mode"
+                  value="ascii"
+                  checked
+                />
+                ASCII text</label
+              ><label
+                ><input type="radio" name="format" id="hex-mode" value="hex" />
+                Hex bytes</label
+              >
+            </div>
+          </fieldset>
+          <div id="create-panel">
+            <label class="label" for="payload" id="payload-label"
+              >ASCII text to hide</label
+            ><textarea
+              id="payload"
+              spellcheck="false"
+              autocapitalize="off"
+            ></textarea>
+            <p id="payload-help" class="muted"></p>
+            <div class="section">
+              <label class="label" for="template">Template</label
+              ><select id="template">
+                <option value="math" selected>Math problem</option>
+                <option value="purchase-order">Purchase order</option>
+                <option value="email">Email confirmation</option>
+                <option value="url">Plain URL</option>
+              </select>
+              <p class="muted" id="template-help"></p>
+            </div>
+            <div class="section">
+              <label class="label" for="language">Document language</label
+              ><select id="language"></select>
+            </div>
+            <div class="section" id="story-panel">
+              <label class="label" for="story">Story</label
+              ><select id="story">
+                <option value="random" selected>Random</option>
+              </select>
+            </div>
+            <div class="section" id="domain-panel" hidden>
+              <label class="label" for="domain">Domain for the links</label
+              ><input
+                type="text"
+                id="domain"
+                value="example.com"
+                placeholder="example.com"
+                autocapitalize="off"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <p class="muted" id="domain-help"></p>
+            </div>
+          </div>
+          <div id="restore-panel" hidden>
+            <label class="label" for="numbers">Document text or numbers</label
+            ><textarea
+              id="numbers"
+              spellcheck="false"
+              autocapitalize="off"
+              placeholder="Paste the full document text, or just the numbers in the order they appear"
+            ></textarea>
+            <p class="muted">
+              Only numbers with at least ten digits are read, in order. Shorter
+              numbers, such as prices, quantities, dates and page numbers, and
+              all other characters are ignored, so numbers may be separated by
+              new lines, spaces or any other text. Do not use thousands
+              separators.
+            </p>
+            <p id="numbers-help" class="muted"></p>
+          </div>
+          <div class="actions">
+            <button id="submit" type="submit">Create PDF</button
+            ><button id="clear" type="button" class="secondary">Clear</button>
+          </div>
+        </fieldset>
+      </form>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="result" class="card" hidden>
+        <h2 id="result-title">Result</h2>
+        <p id="result-info"></p>
+        <div class="actions" id="download-panel">
+          <a id="download" class="download" download>Download</a>
+        </div>
+        <label
+          for="output"
+          class="label"
+          style="margin-top: 24px"
+          id="output-label"
+          >Output</label
+        ><textarea id="output" readonly spellcheck="false"></textarea>
+      </section>
+      <p class="muted">
+        The numbers are an encoding, not encryption: anyone who knows the scheme
+        can restore the data. To protect the content as well, encrypt it first
+        with
+        <a href="./secure-file-encryption.html" style="color: var(--accent)"
+          >Secure file encryption</a
+        >
+        and hide the result as hex bytes. Write down or keep the PDF; the page
+        does not store the format, so pick ASCII or hex when restoring.
+      </p>
+      <details class="card">
+        <summary>Encoding format</summary>
+        <ol>
+          <li>
+            <p>
+              The input becomes bytes: ASCII text uses one byte per character;
+              hex input is stored as the raw bytes it represents, not as hex
+              characters.
+            </p>
+          </li>
+          <li>
+            <p>
+              The bytes are split, in order, into chunks of 4 to 8 bytes chosen
+              at random. When more than 8 bytes remain, a chunk never leaves
+              fewer than 4 bytes behind. An input shorter than 4 bytes is padded
+              in front with random bytes to 4 bytes.
+            </p>
+          </li>
+          <li>
+            <p>
+              Each chunk gets a marker byte in front and is read as an unsigned
+              big-endian integer, written in decimal. The marker is
+              <code>0x01</code>, or <code>0x01</code> plus the number of padding
+              bytes for a padded short input. A chunk of <code>k</code> bytes
+              becomes a number in
+              <code>[2<sup>8k</sup>, 2<sup>8k+1</sup>)</code>, so leading zero
+              bytes survive and each number reveals its own length; no length,
+              format or count is stored. Every number is at least
+              2<sup>32</sup>, so it has 10 to 20 digits.
+            </p>
+          </li>
+          <li>
+            <p>
+              The math template places the numbers in its text in order and uses
+              no other digits anywhere in the document. The purchase order
+              template shows them, in order, as product IDs; its other figures
+              (quantities, prices, dates, PO number, addresses, phone and page
+              numbers) all have fewer than ten digits. The email confirmation
+              and plain URL templates both place the numbers, in order, as path
+              segments of one or more links built from the domain you enter,
+              such as <code>example.com/{n}/{n}/{n}</code>; each link holds as
+              many numbers as fit on one line, and a new link starts once the
+              next number would not. The email confirmation template wraps the
+              link(s) in a short message confirming an order or an appointment,
+              whose only other figures (an order or appointment number and a
+              date) have fewer than ten digits; the plain URL template contains
+              nothing but the link(s). For either one, choose a domain that does
+              not itself contain a run of ten or more digits. The PDF uses the
+              standard Helvetica fonts and contains no metadata. The math,
+              purchase order and email confirmation templates are available in
+              English and Spanish; the plain URL template has no
+              language-specific text.
+            </p>
+          </li>
+          <li>
+            <p>
+              Restoring reads every run of at least ten digits in the entered
+              text, in order, as one number; shorter runs and all other
+              characters are ignored. Each number is converted back to bytes,
+              checked for the marker byte, stripped of it, and the chunks are
+              joined.
+            </p>
+          </li>
+        </ol>
+      </details>
+    </main>
+    <script>
+      "use strict";
+      const CHUNK = Object.freeze({ min: 4, max: 8, marker: 1 });
+
+      function asciiBytes(text) {
+        const bytes = new Uint8Array(text.length);
+        for (let i = 0; i < text.length; i++) {
+          const code = text.charCodeAt(i);
+          if (code > 127)
+            throw new Error(
+              "Only ASCII characters are allowed. Character " +
+                (i + 1) +
+                " (" +
+                JSON.stringify(text[i]) +
+                ") is not ASCII.",
+            );
+          bytes[i] = code;
+        }
+        return bytes;
+      }
+      function hexBytes(text) {
+        const value = text.replace(/\s/g, "");
+        if (!/^(?:[0-9a-fA-F]{2})*$/.test(value))
+          throw new Error(
+            "Hex input must contain only pairs of hexadecimal digits (0-9, a-f), optionally separated by whitespace.",
+          );
+        const bytes = new Uint8Array(value.length / 2);
+        for (let i = 0; i < bytes.length; i++)
+          bytes[i] = parseInt(value.substr(i * 2, 2), 16);
+        return bytes;
+      }
+      function toHex(bytes) {
+        return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
+          "",
+        );
+      }
+      function asciiText(bytes) {
+        const bad = bytes.findIndex((b) => b > 127);
+        if (bad >= 0)
+          throw new Error(
+            "Byte " +
+              (bad + 1) +
+              " (0x" +
+              bytes[bad].toString(16).padStart(2, "0") +
+              ") is not ASCII. Select Hex bytes to view the data.",
+          );
+        return String.fromCharCode(...bytes);
+      }
+      // Unbiased integer in [0, n) from the browser CSPRNG.
+      function randomInt(n) {
+        const limit = Math.floor(2 ** 32 / n) * n,
+          word = new Uint32Array(1);
+        for (;;) {
+          crypto.getRandomValues(word);
+          if (word[0] < limit) return word[0] % n;
+        }
+      }
+      function randomChunkSize() {
+        return CHUNK.min + randomInt(CHUNK.max - CHUNK.min + 1);
+      }
+
+      // Bytes → decimal strings. Each chunk is prefixed with a marker byte so leading zeros and the chunk length survive.
+      // An input shorter than CHUNK.min bytes is padded in front with random bytes up to CHUNK.min, and its marker is
+      // CHUNK.marker plus the padding length, so every number is at least 2^32 and has at least MIN_DIGITS digits.
+      function encodeChunk(marker, chunk) {
+        let value = BigInt(marker);
+        for (const b of chunk) value = (value << 8n) | BigInt(b);
+        return value.toString();
+      }
+      function bytesToNumbers(bytes, pickSize = randomChunkSize) {
+        if (!bytes.length) throw new Error("Enter data to hide.");
+        if (bytes.length < CHUNK.min) {
+          const pad = crypto.getRandomValues(
+            new Uint8Array(CHUNK.min - bytes.length),
+          );
+          return [encodeChunk(CHUNK.marker + pad.length, [...pad, ...bytes])];
+        }
+        const numbers = [];
+        for (let i = 0; i < bytes.length;) {
+          const remaining = bytes.length - i;
+          let size = remaining;
+          if (remaining > CHUNK.max) {
+            size = pickSize();
+            if (remaining - size < CHUNK.min) size = remaining - CHUNK.min;
+          }
+          numbers.push(encodeChunk(CHUNK.marker, bytes.subarray(i, i + size)));
+          i += size;
+        }
+        return numbers;
+      }
+      // The smallest encoded number, 2^32 = 4294967296, has ten digits.
+      const MIN_DIGITS = 10;
+      // Every run of at least MIN_DIGITS decimal digits, in order. Shorter runs (prices, quantities, dates, page numbers)
+      // and all other characters are ignored, so they also separate numbers.
+      function parseNumbers(text) {
+        return (text.match(/\d+/g) || []).filter((n) => n.length >= MIN_DIGITS);
+      }
+      function numbersToBytes(text) {
+        const numbers = parseNumbers(text),
+          out = [];
+        if (!numbers.length)
+          throw new Error(
+            "No numbers with at least " +
+              MIN_DIGITS +
+              " digits found. Enter the document text or the numbers to restore.",
+          );
+        numbers.forEach((value, index) => {
+          let hex = BigInt(value).toString(16);
+          if (hex.length % 2) hex = "0" + hex;
+          const chunk = hex.match(/../g).map((h) => parseInt(h, 16)),
+            marker = chunk.shift();
+          let skip = -1;
+          if (
+            marker === CHUNK.marker &&
+            chunk.length >= CHUNK.min &&
+            chunk.length <= CHUNK.max
+          )
+            skip = 0;
+          else if (
+            marker > CHUNK.marker &&
+            marker < CHUNK.marker + CHUNK.min &&
+            chunk.length === CHUNK.min
+          )
+            skip = marker - CHUNK.marker;
+          if (skip < 0)
+            throw new Error(
+              "Number " +
+                (index + 1) +
+                " (" +
+                (value.length > 12 ? value.slice(0, 12) + "…" : value) +
+                ") was not produced by this page. Check it for typos, and make sure the text contains no other long numbers.",
+            );
+          out.push(...chunk.slice(skip));
+        });
+        return new Uint8Array(out);
+      }
+
+      // Math problem template. The prose contains no digits and no number words, so the encoded numbers are the only numbers in the document.
+      const STORIES = Object.freeze({
+        ledger: {
+          name: "Cooperative ledger",
+          en: {
+            title: "Exercise: The Cooperative Ledger",
+            intro:
+              "A treasurer at a farming cooperative is auditing the deposits made into a shared account over a long season. Every deposit is recorded in credits, and the entries are listed below in the order they were received.",
+            opener: "The opening deposit was {n} credits.",
+            middle: [
+              "Next, the account received {n} credits.",
+              "A later entry records a deposit of {n} credits.",
+              "After that, a member transferred {n} credits.",
+              "The ledger then shows {n} credits arriving from the grain sale.",
+              "Another deposit added {n} credits.",
+              "Following that, {n} credits were credited after the harvest fair.",
+              "The treasurer then noted a transfer of {n} credits.",
+              "Soon after, {n} credits were deposited by the orchard team.",
+            ],
+            closer: "The closing deposit of the season was {n} credits.",
+            single:
+              "Only a lone deposit was made during the season: {n} credits.",
+            question:
+              "Compute the total amount deposited during the season. Then find the remainder when that total is divided by the smallest deposit, and explain whether the total could be shared evenly among members if each member must receive exactly the smallest deposit.",
+            singleQuestion:
+              "Find the sum of the digits of this deposit and decide whether the deposit can be shared evenly among that many members. Explain your reasoning.",
+          },
+          es: {
+            title: "Ejercicio: El libro de la cooperativa",
+            intro:
+              "La tesorera de una cooperativa agrícola revisa los ingresos realizados en una cuenta compartida durante una larga temporada. Cada ingreso se registra en créditos, y los asientos aparecen a continuación en el orden en que se recibieron.",
+            opener: "El ingreso inicial fue de {n} créditos.",
+            middle: [
+              "A continuación, la cuenta recibió {n} créditos.",
+              "Un asiento posterior registra un ingreso de {n} créditos.",
+              "Después, un socio transfirió {n} créditos.",
+              "El libro muestra entonces {n} créditos procedentes de la venta de grano.",
+              "Otro ingreso sumó {n} créditos.",
+              "Tras la feria de la cosecha se abonaron {n} créditos.",
+              "La tesorera anotó luego una transferencia de {n} créditos.",
+              "Poco después, el equipo del huerto ingresó {n} créditos.",
+            ],
+            closer: "El ingreso final de la temporada fue de {n} créditos.",
+            single:
+              "Durante la temporada se registró un ingreso aislado de {n} créditos.",
+            question:
+              "Calcula el importe total ingresado durante la temporada. Después, halla el resto de dividir ese total entre el menor de los ingresos y explica si el total podría repartirse a partes iguales entre los socios si cada socio debe recibir exactamente el menor ingreso.",
+            singleQuestion:
+              "Halla la suma de las cifras de este ingreso y decide si el ingreso puede repartirse a partes iguales entre esa cantidad de socios. Explica tu razonamiento.",
+          },
+        },
+        astronomy: {
+          name: "Distant objects",
+          en: {
+            title: "Exercise: Charting Distant Objects",
+            intro:
+              "An observatory is cataloguing faint objects detected by a survey telescope. The distance to each object, measured in kilometres, is listed below in the order the objects were observed.",
+            opener: "The earliest object observed lies {n} kilometres away.",
+            middle: [
+              "The next object was measured at {n} kilometres.",
+              "Another object was found at a distance of {n} kilometres.",
+              "A dimmer object lies {n} kilometres from the observatory.",
+              "The survey then recorded an object at {n} kilometres.",
+              "Shortly after, an object was located {n} kilometres away.",
+              "A faint companion was measured at {n} kilometres.",
+              "The following object sits {n} kilometres away.",
+            ],
+            closer:
+              "The last object in the catalogue lies {n} kilometres away.",
+            single:
+              "The survey detected a lone object at a distance of {n} kilometres.",
+            question:
+              "Determine the mean distance of the catalogued objects, rounded down to the nearest kilometre. Which object lies closest to that mean, and by how many kilometres does it differ from it? Show your work.",
+            singleQuestion:
+              "Express this distance in metres and estimate how long light takes to travel it. Show your work.",
+          },
+          es: {
+            title: "Ejercicio: Cartografía de objetos lejanos",
+            intro:
+              "Un observatorio está catalogando objetos tenues detectados por un telescopio de rastreo. La distancia a cada objeto, medida en kilómetros, aparece a continuación en el orden en que se observaron.",
+            opener:
+              "El objeto con el que comienza el catálogo está a {n} kilómetros.",
+            middle: [
+              "El siguiente objeto se midió a {n} kilómetros.",
+              "Se encontró otro objeto a una distancia de {n} kilómetros.",
+              "Un objeto más tenue está a {n} kilómetros del observatorio.",
+              "El rastreo registró después un objeto a {n} kilómetros.",
+              "Poco después se localizó un objeto a {n} kilómetros.",
+              "Un compañero débil se midió a {n} kilómetros.",
+              "El objeto que sigue se encuentra a {n} kilómetros.",
+            ],
+            closer: "El último objeto del catálogo está a {n} kilómetros.",
+            single:
+              "El rastreo detectó un objeto aislado a una distancia de {n} kilómetros.",
+            question:
+              "Determina la distancia media de los objetos catalogados, redondeada hacia abajo al kilómetro. ¿Qué objeto está más cerca de esa media y por cuántos kilómetros se diferencia de ella? Muestra tus cálculos.",
+            singleQuestion:
+              "Expresa esta distancia en metros y estima cuánto tarda la luz en recorrerla. Muestra tus cálculos.",
+          },
+        },
+        sequence: {
+          name: "Notebook sequence",
+          en: {
+            title: "Exercise: An Unusual Sequence",
+            intro:
+              "A student discovers a sequence of positive integers written in an old notebook. The terms appear below in the order they were written, and the student wants to understand their structure.",
+            opener: "The notebook begins with the term {n}.",
+            middle: [
+              "The following term is {n}.",
+              "Next comes {n}.",
+              "The student then reads {n}.",
+              "After that the notebook lists {n}.",
+              "Another term follows: {n}.",
+              "The sequence continues with {n}.",
+            ],
+            closer: "The notebook ends with the term {n}.",
+            single: "The notebook contains a lone term: {n}.",
+            question:
+              "Find the greatest common divisor of all the terms, then find the remainder when their sum is divided by the largest term. Justify each step.",
+            singleQuestion:
+              "Find the sum of the digits of this term and decide whether the term is divisible by that sum. Justify your answer.",
+          },
+          es: {
+            title: "Ejercicio: Una sucesión inusual",
+            intro:
+              "Una estudiante descubre una sucesión de números enteros positivos escrita en un viejo cuaderno. Los términos aparecen a continuación en el orden en que se escribieron, y la estudiante quiere entender su estructura.",
+            opener: "El cuaderno comienza con el término {n}.",
+            middle: [
+              "El término siguiente es {n}.",
+              "Luego viene {n}.",
+              "La estudiante lee después {n}.",
+              "A continuación, el cuaderno muestra {n}.",
+              "Sigue otro término: {n}.",
+              "La sucesión continúa con {n}.",
+            ],
+            closer: "El cuaderno termina con el término {n}.",
+            single: "El cuaderno contiene un término aislado: {n}.",
+            question:
+              "Halla el máximo común divisor de todos los términos y, después, el resto de dividir su suma entre el mayor de los términos. Justifica cada paso.",
+            singleQuestion:
+              "Halla la suma de las cifras de este término y decide si el término es divisible entre esa suma. Justifica tu respuesta.",
+          },
+        },
+      });
+      const SENTENCES_PER_PARAGRAPH = 4;
+
+      function mathProblem(
+        numbers,
+        { story = "random", lang = "en", pick = randomInt } = {},
+      ) {
+        const keys = Object.keys(STORIES);
+        const s =
+          STORIES[story === "random" ? keys[pick(keys.length)] : story]?.[lang];
+        if (!s) throw new Error("Unknown story or language.");
+        const fill = (template, n) => template.replace("{n}", n);
+        const sentences = [];
+        if (numbers.length === 1) sentences.push(fill(s.single, numbers[0]));
+        else {
+          let last = -1;
+          numbers.forEach((n, i) => {
+            let template;
+            if (i === 0) template = s.opener;
+            else if (i === numbers.length - 1) template = s.closer;
+            else {
+              // Never repeat the previous middle sentence.
+              let k = pick(s.middle.length - (last < 0 ? 0 : 1));
+              if (last >= 0 && k >= last) k++;
+              last = k;
+              template = s.middle[k];
+            }
+            sentences.push(fill(template, n));
+          });
+        }
+        const paragraphs = [s.intro];
+        for (let i = 0; i < sentences.length; i += SENTENCES_PER_PARAGRAPH)
+          paragraphs.push(
+            sentences.slice(i, i + SENTENCES_PER_PARAGRAPH).join(" "),
+          );
+        paragraphs.push(numbers.length === 1 ? s.singleQuestion : s.question);
+        const doc = { lang, title: s.title, paragraphs };
+        const found = (doc.title + "\n" + paragraphs.join("\n")).match(/\d+/g);
+        if (
+          !found ||
+          found.length !== numbers.length ||
+          found.some((n, i) => n !== numbers[i])
+        )
+          throw new Error("Template produced unexpected numbers.");
+        return doc;
+      }
+
+      // Purchase order template. Product IDs are the encoded numbers; every other number on the purchase order
+      // (quantities, prices, dates, PO number, addresses, phone and page numbers) is shorter than MIN_DIGITS, so restore ignores it.
+      // [English description, Spanish description, unit price in cents]
+      const PRODUCTS = [
+        ["Copy paper, letter, case", "Papel de copia, caja", 4899],
+        ["Toner cartridge, black", "Cartucho de tóner, negro", 8950],
+        ["Stainless hex bolts, box", "Tornillos hexagonales, caja", 1875],
+        ["Nylon cable ties, bag", "Bridas de nailon, bolsa", 695],
+        ["Safety glasses, clear", "Gafas de seguridad", 1240],
+        ["Nitrile gloves, box", "Guantes de nitrilo, caja", 1599],
+        ["Shipping labels, roll", "Etiquetas de envío, rollo", 2150],
+        ["Packing tape, clear", "Cinta de embalar", 499],
+        ["Corrugated boxes, bundle", "Cajas de cartón, lote", 3625],
+        ["Ballpoint pens, blue", "Bolígrafos azules", 899],
+        ["Ergonomic desk chair", "Silla ergonómica", 24900],
+        ["LED shop light", "Lámpara LED de taller", 5475],
+        ["Extension cord, heavy duty", "Extensión reforzada", 3299],
+        ["Work gloves, leather", "Guantes de cuero", 1450],
+        ["Whiteboard markers, set", "Marcadores de pizarrón", 1199],
+        ["Hanging file folders, box", "Carpetas colgantes, caja", 2299],
+        ["Microfiber cloths, pack", "Paños de microfibra", 1350],
+        ["Cordless drill battery", "Batería de taladro", 6899],
+        ["Steel shelving unit", "Estantería metálica", 15800],
+        ["Floor mat, anti-fatigue", "Tapete antifatiga", 7450],
+        ["Label maker tape", "Cinta para etiquetadora", 1725],
+        ["Hand sanitizer, gallon", "Gel antibacterial, galón", 2899],
+        ["Surge protector strip", "Multicontacto con protección", 2499],
+        ["Breakroom coffee, case", "Café para oficina, caja", 6400],
+      ];
+      const groupThousands = (n, sep) =>
+        String(n).replace(/\B(?=(\d{3})+$)/g, sep);
+      const cents2 = (cents) => String(cents % 100).padStart(2, "0");
+      const LOCALES = Object.freeze({
+        en: {
+          name: "English",
+          months: [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+          ],
+          date(d) {
+            return (
+              this.months[d.getMonth()] +
+              " " +
+              d.getDate() +
+              ", " +
+              d.getFullYear()
+            );
+          },
+          money: (cents) =>
+            "$" +
+            groupThousands(Math.floor(cents / 100), ",") +
+            "." +
+            cents2(cents),
+          files: {
+            math: "exercise.pdf",
+            purchaseOrder: "purchase-order.pdf",
+            email: "confirmation.pdf",
+            url: "link.pdf",
+          },
+          purchaseOrder: {
+            title: "PURCHASE ORDER",
+            prefix: "PO-",
+            number: "PO no.",
+            date: "Date",
+            due: "Requested delivery",
+            billTo: "SHIP TO",
+            columns: [
+              "Product ID",
+              "Description",
+              "Qty",
+              "Unit price",
+              "Amount",
+            ],
+            subtotal: "Subtotal",
+            // Sales tax rates in basis points.
+            taxRates: [600, 625, 700, 725, 825, 875],
+            taxLabel: (bps) => "Sales tax (" + bps / 100 + "%)",
+            total: "Estimated total",
+            terms: (days) =>
+              "Delivery terms: please fulfill within " +
+              days +
+              " days of this purchase order and reference the PO number on your invoice and packing slip.",
+            thanks: "Thank you for your partnership.",
+            continued: (number) => "Purchase order " + number + " (continued)",
+            page: (i, n) => "Page " + i + " of " + n,
+            sellers: [
+              {
+                name: "Harbor & Pine Supply Co.",
+                lines: [
+                  "418 Wharf Street",
+                  "Port Ellis, ME 04101",
+                  "Phone (555) 014-2290",
+                ],
+              },
+              {
+                name: "Bluestem Industrial Parts",
+                lines: [
+                  "2207 Prairie Road",
+                  "Hollins, KS 67401",
+                  "Phone (555) 018-7731",
+                ],
+              },
+              {
+                name: "Larkspur Office Goods",
+                lines: [
+                  "96 Juniper Avenue, Suite 210",
+                  "Ashford, OR 97520",
+                  "Phone (555) 012-6604",
+                ],
+              },
+            ],
+            customers: [
+              {
+                name: "Meridian Dental Group",
+                lines: [
+                  "Attn: Accounts Payable",
+                  "1550 Cedar Lane",
+                  "Brookfield, WI 53005",
+                ],
+              },
+              {
+                name: "Cobalt Ridge Landscaping",
+                lines: [
+                  "Attn: Office Manager",
+                  "77 Quarry Road",
+                  "Granby, CO 80446",
+                ],
+              },
+              {
+                name: "Fernwood Community Library",
+                lines: [
+                  "Attn: Facilities",
+                  "300 Library Square",
+                  "Fernwood, ID 83830",
+                ],
+              },
+              {
+                name: "Tidewater Marine Services",
+                lines: [
+                  "Attn: Purchasing",
+                  "12 Dock Street",
+                  "Belhaven, NC 27810",
+                ],
+              },
+            ],
+          },
+          email: {
+            kinds: {
+              order: {
+                subject: "Your order is confirmed",
+                prefix: "ORD-",
+                body: (number, date) =>
+                  "This confirms your order " +
+                  number +
+                  ", placed on " +
+                  date +
+                  ", was received successfully.",
+                linkIntro: "View your order details online:",
+                closing: "Thank you for your purchase.",
+              },
+              appointment: {
+                subject: "Your appointment is confirmed",
+                prefix: "APT-",
+                body: (number, date) =>
+                  "This confirms your appointment " +
+                  number +
+                  ", scheduled for " +
+                  date +
+                  ", was booked successfully.",
+                linkIntro: "View your appointment details online:",
+                closing: "We look forward to seeing you.",
+              },
+            },
+          },
+        },
+        es: {
+          name: "Español",
+          months: [
+            "enero",
+            "febrero",
+            "marzo",
+            "abril",
+            "mayo",
+            "junio",
+            "julio",
+            "agosto",
+            "septiembre",
+            "octubre",
+            "noviembre",
+            "diciembre",
+          ],
+          date(d) {
+            return (
+              d.getDate() +
+              " de " +
+              this.months[d.getMonth()] +
+              " de " +
+              d.getFullYear()
+            );
+          },
+          money: (cents) =>
+            "$" +
+            groupThousands(Math.floor(cents / 100), ",") +
+            "." +
+            cents2(cents) +
+            " MXN",
+          files: {
+            math: "ejercicio.pdf",
+            purchaseOrder: "orden-de-compra.pdf",
+            email: "confirmacion.pdf",
+            url: "enlace.pdf",
+          },
+          purchaseOrder: {
+            title: "ORDEN DE COMPRA",
+            prefix: "OC-",
+            number: "No. de orden",
+            date: "Fecha",
+            due: "Entrega solicitada",
+            billTo: "ENVIAR A",
+            columns: [
+              "ID de producto",
+              "Descripción",
+              "Cant.",
+              "Precio unit.",
+              "Importe",
+            ],
+            subtotal: "Subtotal",
+            // IVA rate in basis points (standard Mexican rate).
+            taxRates: [1600],
+            taxLabel: (bps) => "IVA (" + bps / 100 + " %)",
+            total: "Total estimado",
+            terms: (days) =>
+              "Condiciones de entrega: cumplir en un plazo de " +
+              days +
+              " días a partir de esta orden de compra e indique el número de orden en su factura y en el albarán.",
+            thanks: "Gracias por su colaboración.",
+            continued: (number) =>
+              "Orden de compra " + number + " (continuación)",
+            page: (i, n) => "Página " + i + " de " + n,
+            sellers: [
+              {
+                name: "Suministros Puerto Pino, S.A. de C.V.",
+                lines: [
+                  "Calle del Muelle 41",
+                  "91700 Veracruz, Ver.",
+                  "Tel. 229 555 0122",
+                ],
+              },
+              {
+                name: "Ferretería Industrial Valdeazul, S.A. de C.V.",
+                lines: [
+                  "Avenida de la Pradera 220",
+                  "44100 Guadalajara, Jal.",
+                  "Tel. 33 5550 1876",
+                ],
+              },
+              {
+                name: "Papelería Alameda, S.A. de C.V.",
+                lines: [
+                  "Paseo de los Enebros 96, local B",
+                  "03100 Ciudad de México, CDMX",
+                  "Tel. 55 5550 0604",
+                ],
+              },
+            ],
+            customers: [
+              {
+                name: "Clínica Dental Meridiano",
+                lines: [
+                  "A la atención de: Contabilidad",
+                  "Calle del Cedro 15",
+                  "64000 Monterrey, N.L.",
+                ],
+              },
+              {
+                name: "Jardines Cobalto, S.A. de C.V.",
+                lines: [
+                  "A la atención de: Administración",
+                  "Camino de la Cantera 77",
+                  "45010 Zapopan, Jal.",
+                ],
+              },
+              {
+                name: "Biblioteca Municipal de Helechal",
+                lines: [
+                  "A la atención de: Mantenimiento",
+                  "Plaza de la Biblioteca 3",
+                  "29000 Helechal, Chis.",
+                ],
+              },
+              {
+                name: "Servicios Marítimos Marea, S.A. de C.V.",
+                lines: [
+                  "A la atención de: Compras",
+                  "Calle del Dique 12",
+                  "82000 Mazatlán, Sin.",
+                ],
+              },
+            ],
+          },
+          email: {
+            kinds: {
+              order: {
+                subject: "Tu pedido está confirmado",
+                prefix: "PED-",
+                body: (number, date) =>
+                  "Confirmamos que tu pedido " +
+                  number +
+                  ", realizado el " +
+                  date +
+                  ", se recibió correctamente.",
+                linkIntro: "Consulta los detalles de tu pedido en línea:",
+                closing: "Gracias por tu compra.",
+              },
+              appointment: {
+                subject: "Tu cita está confirmada",
+                prefix: "CITA-",
+                body: (number, date) =>
+                  "Confirmamos que tu cita " +
+                  number +
+                  ", programada para el " +
+                  date +
+                  ", se agendó correctamente.",
+                linkIntro: "Consulta los detalles de tu cita en línea:",
+                closing: "Esperamos verte pronto.",
+              },
+            },
+          },
+        },
+      });
+      const PURCHASE_ORDER = Object.freeze({ maxQuantity: 12, termsDays: 30 });
+      // A domain for the email confirmation and plain URL templates' links: one or more dot-separated labels of
+      // letters, digits and hyphens. No scheme or path is allowed; a leading "http(s)://" and any trailing path
+      // are stripped first.
+      function normalizeDomain(domain) {
+        const value = String(domain || "")
+          .trim()
+          .replace(/^https?:\/\//i, "")
+          .replace(/\/.*$/, "");
+        if (!value) throw new Error("Enter a domain for the links.");
+        if (
+          !/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(
+            value,
+          )
+        )
+          throw new Error("Enter a valid domain, such as example.com.");
+        return value;
+      }
+      function locale(lang) {
+        const l = LOCALES[lang];
+        if (!l) throw new Error("Unknown language.");
+        return l;
+      }
+      function money(cents, lang = "en") {
+        return locale(lang).money(cents);
+      }
+      function purchaseOrder(
+        numbers,
+        { lang = "en", pick = randomInt, date = new Date() } = {},
+      ) {
+        const l = locale(lang),
+          t = l.purchaseOrder,
+          column = lang === "es" ? 1 : 0;
+        const order = PRODUCTS.map((_, i) => i);
+        for (let i = order.length - 1; i > 0; i--) {
+          const j = pick(i + 1);
+          [order[i], order[j]] = [order[j], order[i]];
+        }
+        const items = numbers.map((id, i) => {
+          const product = PRODUCTS[order[i % order.length]],
+            price = product[2],
+            qty = 1 + pick(PURCHASE_ORDER.maxQuantity);
+          return {
+            id,
+            description: product[column],
+            qty,
+            price,
+            amount: qty * price,
+          };
+        });
+        const subtotal = items.reduce((sum, item) => sum + item.amount, 0),
+          taxRate = t.taxRates[pick(t.taxRates.length)],
+          tax = Math.round((subtotal * taxRate) / 10000),
+          issued = new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate(),
+          ),
+          due = new Date(issued);
+        due.setDate(due.getDate() + PURCHASE_ORDER.termsDays);
+        const doc = {
+          kind: "purchase-order",
+          lang,
+          seller: t.sellers[pick(t.sellers.length)],
+          customer: t.customers[pick(t.customers.length)],
+          number: t.prefix + (100000 + pick(900000)),
+          issued: l.date(issued),
+          due: l.date(due),
+          items,
+          subtotal,
+          tax,
+          taxLabel: t.taxLabel(taxRate),
+          total: subtotal + tax,
+          terms: t.terms(PURCHASE_ORDER.termsDays),
+          thanks: t.thanks,
+        };
+        const found = parseNumbers(documentText(doc));
+        if (
+          found.length !== numbers.length ||
+          found.some((n, i) => n !== numbers[i])
+        )
+          throw new Error("Template produced unexpected numbers.");
+        return doc;
+      }
+
+      // Shared by the email confirmation and plain URL templates: splits numbers, in order, into as many
+      // "https://<host>/<n>/<n>/…" links as needed so each link's text fits within one page line.
+      function buildLinks(host, numbers) {
+        const prefix = "https://" + host,
+          maxWidth = PAGE.width - 2 * PAGE.margin;
+        const links = [];
+        let current = prefix;
+        for (const n of numbers) {
+          const next = current + "/" + n;
+          if (current !== prefix && textWidth(next, PAGE.size) > maxWidth) {
+            links.push(current);
+            current = prefix + "/" + n;
+          } else current = next;
+        }
+        links.push(current);
+        return links;
+      }
+
+      // Email confirmation template. A short message confirms an order or an appointment was placed successfully,
+      // then every number becomes a path segment of a link built from the user's domain, in order; every other
+      // figure (the order or appointment number, the date) is shorter than MIN_DIGITS, so restore ignores it.
+      function emailConfirmation(
+        numbers,
+        {
+          lang = "en",
+          pick = randomInt,
+          date = new Date(),
+          domain = "example.com",
+        } = {},
+      ) {
+        const l = locale(lang),
+          t = l.email,
+          host = normalizeDomain(domain),
+          kinds = Object.keys(t.kinds),
+          k = t.kinds[kinds[pick(kinds.length)]],
+          issued = new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate(),
+          ),
+          number = k.prefix + (100000 + pick(900000));
+        const paragraphs = [
+          k.body(number, l.date(issued)),
+          k.linkIntro,
+          ...buildLinks(host, numbers),
+          k.closing,
+        ];
+        const doc = { kind: "email", lang, title: k.subject, paragraphs };
+        const found = parseNumbers(documentText(doc));
+        if (
+          found.length !== numbers.length ||
+          found.some((n, i) => n !== numbers[i])
+        )
+          throw new Error("Template produced unexpected numbers.");
+        return doc;
+      }
+
+      // Plain URL template. The numbers are the entire document: each becomes a path segment of a link built from
+      // the user's domain, in order, with no other text.
+      function urlDocument(
+        numbers,
+        { lang = "en", domain = "example.com" } = {},
+      ) {
+        const host = normalizeDomain(domain);
+        const doc = {
+          kind: "url",
+          lang,
+          title: "",
+          paragraphs: buildLinks(host, numbers),
+        };
+        const found = parseNumbers(documentText(doc));
+        if (
+          found.length !== numbers.length ||
+          found.some((n, i) => n !== numbers[i])
+        )
+          throw new Error("Template produced unexpected numbers.");
+        return doc;
+      }
+
+      function createDocument(
+        numbers,
+        { template, story, lang = "en", domain },
+      ) {
+        if (template === "purchase-order")
+          return purchaseOrder(numbers, { lang });
+        if (template === "email")
+          return emailConfirmation(numbers, { lang, domain });
+        if (template === "url") return urlDocument(numbers, { lang, domain });
+        if (template === "math") return mathProblem(numbers, { story, lang });
+        throw new Error("Unknown template.");
+      }
+      function fileName(doc) {
+        const key =
+          doc.kind === "purchase-order"
+            ? "purchaseOrder"
+            : doc.kind === "email"
+              ? "email"
+              : doc.kind === "url"
+                ? "url"
+                : "math";
+        return locale(doc.lang).files[key];
+      }
+      function documentText(doc) {
+        if (doc.kind !== "purchase-order")
+          return (
+            doc.title ? [doc.title, ...doc.paragraphs] : doc.paragraphs
+          ).join("\n\n");
+        const t = locale(doc.lang).purchaseOrder,
+          m = (cents) => money(cents, doc.lang);
+        return [
+          [doc.seller.name, ...doc.seller.lines].join("\n"),
+          [
+            t.title,
+            t.number + " " + doc.number,
+            t.date + ": " + doc.issued,
+            t.due + ": " + doc.due,
+          ].join("\n"),
+          [t.billTo + ":", doc.customer.name, ...doc.customer.lines].join("\n"),
+          [
+            t.columns.join(" | "),
+            ...doc.items.map((item) =>
+              [
+                item.id,
+                item.description,
+                item.qty,
+                m(item.price),
+                m(item.amount),
+              ].join(" | "),
+            ),
+          ].join("\n"),
+          [
+            t.subtotal + ": " + m(doc.subtotal),
+            doc.taxLabel + ": " + m(doc.tax),
+            t.total + ": " + m(doc.total),
+          ].join("\n"),
+          doc.terms + "\n" + doc.thanks,
+        ].join("\n\n");
+      }
+
+      // Minimal PDF 1.4 writer: Letter pages, standard Helvetica fonts (not embedded), uncompressed content, no metadata.
+      const PAGE = Object.freeze({
+        width: 612,
+        height: 792,
+        margin: 72,
+        size: 11,
+        leading: 16,
+        titleSize: 16,
+        titleLeading: 22,
+        gap: 9,
+      });
+      // Advance widths (1/1000 em) for ASCII 32–126 from the standard Helvetica and Helvetica-Bold AFMs.
+      const WIDTHS = Object.freeze({
+        F1: [
+          278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333,
+          278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278,
+          584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278,
+          500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944,
+          667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556,
+          278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500,
+          278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584,
+        ],
+        F2: [
+          278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333,
+          278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333,
+          584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278,
+          556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944,
+          667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556,
+          333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556,
+          333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584,
+        ],
+      });
+
+      // Non-ASCII characters used by the Spanish templates: [Helvetica, Helvetica-Bold] widths and WinAnsiEncoding byte.
+      const EXTRA_GLYPHS = Object.freeze({
+        á: [556, 556, 0xe1],
+        é: [556, 556, 0xe9],
+        í: [278, 278, 0xed],
+        ó: [556, 611, 0xf3],
+        ú: [556, 611, 0xfa],
+        ü: [556, 611, 0xfc],
+        ñ: [556, 611, 0xf1],
+        Á: [667, 722, 0xc1],
+        É: [667, 667, 0xc9],
+        Í: [278, 278, 0xcd],
+        Ó: [778, 778, 0xd3],
+        Ú: [722, 722, 0xda],
+        Ü: [722, 722, 0xdc],
+        Ñ: [722, 722, 0xd1],
+        "¿": [611, 611, 0xbf],
+        "¡": [333, 333, 0xa1],
+        º: [365, 365, 0xba],
+        ª: [370, 370, 0xaa],
+        "€": [556, 556, 0x80],
+      });
+      function glyphWidth(ch, font) {
+        const code = ch.charCodeAt(0);
+        if (code >= 0x20 && code <= 0x7e) return WIDTHS[font][code - 32];
+        const extra = EXTRA_GLYPHS[ch];
+        if (!extra)
+          throw new Error(
+            "PDF text cannot contain " + JSON.stringify(ch) + ".",
+          );
+        return extra[font === "F2" ? 1 : 0];
+      }
+      function textWidth(text, size, font = "F1") {
+        let units = 0;
+        for (const ch of text) units += glyphWidth(ch, font);
+        return (units * size) / 1000;
+      }
+      // PDF file bytes: ASCII as-is, other characters as their single WinAnsiEncoding byte (all text was checked by textWidth).
+      function pdfBytes(text) {
+        return Uint8Array.from(text, (ch) =>
+          ch.charCodeAt(0) < 128 ? ch.charCodeAt(0) : EXTRA_GLYPHS[ch][2],
+        );
+      }
+      function wrapText(text, size, maxWidth, font = "F1") {
+        const lines = [];
+        let line = "";
+        for (const word of text.split(/ +/).filter(Boolean)) {
+          const next = line ? line + " " + word : word;
+          if (line && textWidth(next, size, font) > maxWidth) {
+            lines.push(line);
+            line = word;
+          } else line = next;
+        }
+        if (line) lines.push(line);
+        return lines;
+      }
+      function pdfString(text) {
+        return "(" + text.replace(/[\\()]/g, "\\$&") + ")";
+      }
+      // Page drawing operations: { font, size, x, y, text, gray? }, { rule: [x1, y1, x2, y2], gray }, { fill: [x, y, w, h], gray }.
+      function textOp(font, size, x, y, text, align = "left", gray = 0) {
+        const width = textWidth(text, size, font);
+        if (align === "right") x -= width;
+        else if (align === "center") x -= width / 2;
+        return { font, size, x, y, text, gray };
+      }
+      function layoutPages(doc) {
+        const width = PAGE.width - 2 * PAGE.margin,
+          bottom = PAGE.margin,
+          pages = [[]];
+        let y = PAGE.height - PAGE.margin;
+        const place = (font, size, leading, text) => {
+          if (y - leading < bottom) {
+            pages.push([]);
+            y = PAGE.height - PAGE.margin;
+          }
+          y -= leading;
+          pages[pages.length - 1].push(
+            textOp(font, size, PAGE.margin, y, text),
+          );
+        };
+        for (const line of wrapText(doc.title, PAGE.titleSize, width, "F2"))
+          place("F2", PAGE.titleSize, PAGE.titleLeading, line);
+        for (const paragraph of doc.paragraphs) {
+          y -= PAGE.gap;
+          for (const line of wrapText(paragraph, PAGE.size, width))
+            place("F1", PAGE.size, PAGE.leading, line);
+        }
+        return pages;
+      }
+      const SHEET = Object.freeze({
+        left: 54,
+        right: 558,
+        bottom: 72,
+        footer: 36,
+        row: 20,
+        rowSize: 9.5,
+        // Column x positions: Product ID and Description are left-aligned, the rest right-aligned.
+        columns: {
+          id: 62,
+          description: 196,
+          qty: 398,
+          price: 476,
+          amount: 550,
+        },
+        descriptionWidth: 175,
+        // Space needed below the last row for the totals and notes.
+        closing: 130,
+      });
+      function layoutPurchaseOrder(doc) {
+        const t = locale(doc.lang).purchaseOrder,
+          m = (cents) => money(cents, doc.lang),
+          pages = [];
+        let ops, y;
+        const add = (...args) => ops.push(textOp(...args));
+        const rule = (y, gray = 0.8) =>
+          ops.push({ rule: [SHEET.left, y, SHEET.right, y], gray });
+        const newPage = () => {
+          ops = [];
+          pages.push(ops);
+          add("F2", 11, SHEET.left, 738, doc.seller.name);
+          add(
+            "F1",
+            9,
+            SHEET.right,
+            738,
+            t.continued(doc.number),
+            "right",
+            0.35,
+          );
+          rule(726);
+          y = 700;
+        };
+        const tableHeader = () => {
+          ops.push({
+            fill: [SHEET.left, y - 6, SHEET.right - SHEET.left, 20],
+            gray: 0.92,
+          });
+          const c = SHEET.columns;
+          add("F2", 9, c.id, y, t.columns[0]);
+          add("F2", 9, c.description, y, t.columns[1]);
+          add("F2", 9, c.qty, y, t.columns[2], "right");
+          add("F2", 9, c.price, y, t.columns[3], "right");
+          add("F2", 9, c.amount, y, t.columns[4], "right");
+          y -= SHEET.row;
+        };
+
+        // First page header: seller, purchase order details, customer.
+        ops = [];
+        pages.push(ops);
+        add("F2", 16, SHEET.left, 720, doc.seller.name);
+        doc.seller.lines.forEach((line, i) =>
+          add("F1", 9, SHEET.left, 702 - i * 12, line, "left", 0.3),
+        );
+        add("F2", 26, SHEET.right, 716, t.title, "right");
+        [
+          [t.number, doc.number],
+          [t.date, doc.issued],
+          [t.due, doc.due],
+        ].forEach(([label, value], i) => {
+          add("F1", 9, 372, 694 - i * 13, label, "left", 0.35);
+          add("F1", 9, SHEET.right, 694 - i * 13, value, "right");
+        });
+        rule(648);
+        add("F2", 8, SHEET.left, 628, t.billTo, "left", 0.35);
+        add("F2", 10.5, SHEET.left, 613, doc.customer.name);
+        doc.customer.lines.forEach((line, i) =>
+          add("F1", 9, SHEET.left, 599 - i * 12, line, "left", 0.3),
+        );
+        y = 546;
+        tableHeader();
+
+        for (const item of doc.items) {
+          if (y - SHEET.row < SHEET.bottom) {
+            newPage();
+            tableHeader();
+          }
+          if (
+            textWidth(item.description, SHEET.rowSize) > SHEET.descriptionWidth
+          )
+            throw new Error("Product description is too long.");
+          const c = SHEET.columns,
+            size = SHEET.rowSize;
+          add("F1", size, c.id, y, item.id);
+          add("F1", size, c.description, y, item.description);
+          add("F1", size, c.qty, y, String(item.qty), "right");
+          add("F1", size, c.price, y, m(item.price), "right");
+          add("F1", size, c.amount, y, m(item.amount), "right");
+          rule(y - 7, 0.86);
+          y -= SHEET.row;
+        }
+
+        if (y - SHEET.closing < SHEET.bottom) newPage();
+        y -= 8;
+        const labelX = 360;
+        add("F1", 9.5, labelX, y, t.subtotal);
+        add("F1", 9.5, SHEET.columns.amount, y, m(doc.subtotal), "right");
+        y -= 16;
+        add("F1", 9.5, labelX, y, doc.taxLabel);
+        add("F1", 9.5, SHEET.columns.amount, y, m(doc.tax), "right");
+        y -= 10;
+        ops.push({ rule: [labelX, y, SHEET.right, y], gray: 0.3 });
+        y -= 16;
+        add("F2", 11, labelX, y, t.total);
+        add("F2", 11, SHEET.columns.amount, y, m(doc.total), "right");
+        y -= 36;
+        for (const line of wrapText(doc.terms, 9, SHEET.right - SHEET.left)) {
+          add("F1", 9, SHEET.left, y, line, "left", 0.3);
+          y -= 12;
+        }
+        add("F2", 9, SHEET.left, y - 4, doc.thanks);
+
+        pages.forEach((page, i) => {
+          ops = page;
+          add(
+            "F1",
+            8,
+            PAGE.width / 2,
+            SHEET.footer,
+            t.page(i + 1, pages.length),
+            "center",
+            0.45,
+          );
+        });
+        return pages;
+      }
+      function pageContent(ops) {
+        const n = (v) => String(Number(v.toFixed(2)));
+        return ops
+          .map((op) => {
+            if (op.fill)
+              return (
+                "q " + n(op.gray) + " g " + op.fill.map(n).join(" ") + " re f Q"
+              );
+            if (op.rule) {
+              const [x1, y1, x2, y2] = op.rule.map(n);
+              return (
+                "q " +
+                n(op.gray) +
+                " G 0.5 w " +
+                x1 +
+                " " +
+                y1 +
+                " m " +
+                x2 +
+                " " +
+                y2 +
+                " l S Q"
+              );
+            }
+            return (
+              "BT /" +
+              op.font +
+              " " +
+              n(op.size) +
+              " Tf " +
+              n(op.gray) +
+              " g 1 0 0 1 " +
+              n(op.x) +
+              " " +
+              n(op.y) +
+              " Tm " +
+              pdfString(op.text) +
+              " Tj ET"
+            );
+          })
+          .join("\n");
+      }
+      function buildPdf(doc) {
+        const pages =
+            doc.kind === "purchase-order"
+              ? layoutPurchaseOrder(doc)
+              : layoutPages(doc),
+          objects = [];
+        const pageIds = pages.map((_, i) => 5 + i * 2);
+        objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+        objects[2] =
+          "<< /Type /Pages /Kids [" +
+          pageIds.map((id) => id + " 0 R").join(" ") +
+          "] /Count " +
+          pages.length +
+          " >>";
+        objects[3] =
+          "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+        objects[4] =
+          "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+        pages.forEach((ops, i) => {
+          const content = pageContent(ops);
+          objects[pageIds[i]] =
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " +
+            PAGE.width +
+            " " +
+            PAGE.height +
+            "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " +
+            (pageIds[i] + 1) +
+            " 0 R >>";
+          objects[pageIds[i] + 1] =
+            "<< /Length " +
+            content.length +
+            " >>\nstream\n" +
+            content +
+            "\nendstream";
+        });
+        let pdf = "%PDF-1.4\n";
+        const offsets = [];
+        for (let id = 1; id < objects.length; id++) {
+          offsets[id] = pdf.length;
+          pdf += id + " 0 obj\n" + objects[id] + "\nendobj\n";
+        }
+        const xref = pdf.length;
+        pdf += "xref\n0 " + objects.length + "\n0000000000 65535 f \n";
+        for (let id = 1; id < objects.length; id++)
+          pdf += String(offsets[id]).padStart(10, "0") + " 00000 n \n";
+        pdf +=
+          "trailer\n<< /Size " +
+          objects.length +
+          " /Root 1 0 R >>\nstartxref\n" +
+          xref +
+          "\n%%EOF\n";
+        return { bytes: pdfBytes(pdf), pages: pages.length };
+      }
+    </script>
+    <script>
+      "use strict";
+      const $ = (id) => document.getElementById(id);
+      let downloadUrl = null,
+        restored = null;
+      for (const [key, story] of Object.entries(STORIES))
+        $("story").add(new Option(story.name, key));
+      for (const [key, l] of Object.entries(LOCALES))
+        $("language").add(new Option(l.name, key, key === "en", key === "en"));
+
+      function clearResult() {
+        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+        downloadUrl = null;
+        restored = null;
+        $("download").removeAttribute("href");
+        $("result").hidden = true;
+        $("output").value = "";
+        $("status").textContent = "";
+        $("status").className = "";
+      }
+      function payloadBytes() {
+        return $("hex-mode").checked
+          ? hexBytes($("payload").value)
+          : asciiBytes($("payload").value);
+      }
+      function updateHelp() {
+        if ($("create").checked) {
+          try {
+            const size = payloadBytes().length;
+            $("payload-help").textContent =
+              size.toLocaleString() +
+              " bytes" +
+              ($("hex-mode").checked ? " (hex is stored as raw bytes)" : "") +
+              ".";
+          } catch (error) {
+            $("payload-help").textContent = error.message;
+          }
+        } else {
+          const count = parseNumbers($("numbers").value).length;
+          $("numbers-help").textContent = count
+            ? count.toLocaleString() + (count === 1 ? " number." : " numbers.")
+            : "";
+        }
+      }
+      function renderRestored() {
+        if (!restored) return;
+        const hex = $("hex-mode").checked;
+        $("output-label").textContent = hex
+          ? "Restored bytes (hex)"
+          : "Restored ASCII text";
+        try {
+          $("output").value = hex ? toHex(restored) : asciiText(restored);
+          $("status").textContent = "";
+        } catch (error) {
+          $("output").value = "";
+          $("status").textContent = error.message;
+        }
+      }
+      function updateMode() {
+        const restore = $("restore").checked,
+          hex = $("hex-mode").checked;
+        $("create-panel").hidden = restore;
+        $("restore-panel").hidden = !restore;
+        $("format-legend").textContent = restore ? "Render as" : "Input format";
+        $("payload-label").textContent = hex
+          ? "Hex bytes to hide"
+          : "ASCII text to hide";
+        $("submit").textContent = restore ? "Restore data" : "Create PDF";
+        const template = $("template").value,
+          purchaseOrder = template === "purchase-order",
+          email = template === "email",
+          url = template === "url";
+        $("story-panel").hidden = template !== "math";
+        $("domain-panel").hidden = !email && !url;
+        $("domain-help").textContent =
+          "Used to build the link or links below; nothing is looked up or sent anywhere.";
+        $("template-help").textContent = purchaseOrder
+          ? "Each number becomes a product ID line item. Vendor, ship-to, products, quantities and prices are randomized on every run."
+          : email
+            ? "A short message confirms an order or appointment, then the numbers become a link built from the domain below. Wording is randomized on every run."
+            : url
+              ? "The document is nothing but the domain below with the numbers as path segments, split across as many links as needed."
+              : "Wording and number sizes are randomized on every run.";
+        updateHelp();
+      }
+
+      for (const id of ["create", "restore"])
+        $(id).addEventListener("change", () => {
+          clearResult();
+          updateMode();
+        });
+      for (const id of ["ascii-mode", "hex-mode"])
+        $(id).addEventListener("change", () => {
+          if ($("create").checked) clearResult();
+          updateMode();
+          renderRestored();
+        });
+      for (const id of [
+        "payload",
+        "numbers",
+        "template",
+        "story",
+        "language",
+        "domain",
+      ])
+        $(id).addEventListener("input", () => {
+          clearResult();
+          updateMode();
+        });
+      $("clear").addEventListener("click", () => {
+        $("form").reset();
+        clearResult();
+        updateMode();
+      });
+      $("form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        clearResult();
+        try {
+          if ($("restore").checked) {
+            restored = numbersToBytes($("numbers").value);
+            $("result-title").textContent = "Data restored";
+            $("result-info").textContent =
+              restored.length.toLocaleString() + " bytes restored.";
+            $("download-panel").hidden = true;
+            $("result").hidden = false;
+            renderRestored();
+            return;
+          }
+          const bytes = payloadBytes(),
+            numbers = bytesToNumbers(bytes);
+          if (toHex(numbersToBytes(numbers.join("\n"))) !== toHex(bytes))
+            throw new Error("Encoding check failed.");
+          const doc = createDocument(numbers, {
+              template: $("template").value,
+              story: $("story").value,
+              lang: $("language").value,
+              domain: $("domain").value,
+            }),
+            pdf = buildPdf(doc),
+            name = fileName(doc);
+          downloadUrl = URL.createObjectURL(
+            new Blob([pdf.bytes], { type: "application/pdf" }),
+          );
+          $("download").href = downloadUrl;
+          $("download").download = name;
+          $("download").textContent = "Download " + name;
+          $("download-panel").hidden = false;
+          $("output-label").textContent = "Document text";
+          $("output").value = documentText(doc);
+          $("result-title").textContent = "PDF created";
+          $("result-info").textContent =
+            bytes.length.toLocaleString() +
+            " bytes encoded as " +
+            numbers.length.toLocaleString() +
+            (numbers.length === 1 ? " number" : " numbers") +
+            " · " +
+            pdf.pages +
+            (pdf.pages === 1 ? " page" : " pages") +
+            " · " +
+            pdf.bytes.length.toLocaleString() +
+            "-byte PDF. Restoring needs every number, in order.";
+          $("result").hidden = false;
+        } catch (error) {
+          clearResult();
+          $("status").textContent = error.message || "Operation failed.";
+          $("status").className = "error";
+        }
+      });
+      window.addEventListener("pagehide", clearResult);
+      updateMode();
+    </script>
+  </body>
+</html>
