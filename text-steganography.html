@@ -1,0 +1,1510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Text steganography</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --background: #090b0a;
+        --surface: #141816;
+        --surface-raised: #1a201d;
+        --border: #303832;
+        --text: #f2f4ef;
+        --muted: #a7b0a9;
+        --accent: #f2a900;
+        --accent-hover: #ffbd2e;
+        --error: #ff8c82;
+        --success: #89d99d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 32px 18px;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 50% 0%, #f2a90018, transparent 34rem),
+          var(--background);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        width: min(820px, 100%);
+        margin: 0 auto;
+      }
+      header {
+        margin: 30px 0 28px;
+      }
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent);
+        font-size: 0.76rem;
+        font-weight: 750;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 7vw, 3.7rem);
+        line-height: 1;
+        letter-spacing: -0.055em;
+      }
+      h2 {
+        margin-top: 0;
+        font-size: 1.2rem;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .intro {
+        max-width: 650px;
+        margin: 16px 0 0;
+        line-height: 1.65;
+      }
+      .card {
+        padding: clamp(20px, 4vw, 34px);
+        margin: 24px 0;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface);
+      }
+      form.card {
+        box-shadow: 0 24px 80px #00000047;
+      }
+      fieldset {
+        min-width: 0;
+        border: 0;
+        padding: 0;
+        margin: 0 0 24px;
+      }
+      #controls {
+        margin-bottom: 0;
+      }
+      legend,
+      .label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 700;
+      }
+      .choices {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .choices label,
+      .show {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      input {
+        max-width: 100%;
+      }
+      input[type="radio"],
+      input[type="checkbox"] {
+        accent-color: var(--accent);
+      }
+      input[type="password"],
+      input[type="text"],
+      textarea {
+        display: block;
+        width: 100%;
+        padding: 14px 15px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        background: #0e110f;
+        font: inherit;
+      }
+      textarea {
+        min-height: 170px;
+        resize: vertical;
+        overflow-wrap: anywhere;
+        font:
+          0.88rem/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Monaco,
+          Consolas,
+          monospace;
+      }
+      #target-hex {
+        min-height: 90px;
+      }
+      button,
+      .download,
+      input::file-selector-button {
+        display: inline-block;
+        min-height: 46px;
+        padding: 12px 18px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        color: var(--text);
+        background: var(--surface-raised);
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 750;
+        cursor: pointer;
+        text-decoration: none;
+        overflow-wrap: anywhere;
+      }
+      button:hover,
+      .download:hover {
+        border-color: #4a554e;
+      }
+      button[type="submit"],
+      .download {
+        color: #17130a;
+        background: var(--accent);
+        border-color: transparent;
+      }
+      button[type="submit"]:hover,
+      .download:hover {
+        background: var(--accent-hover);
+      }
+      button[type="submit"] {
+        flex: 1;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 24px;
+      }
+      .password,
+      .section {
+        margin-top: 24px;
+      }
+      .show {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .muted {
+        font-size: 0.85rem;
+      }
+      #status {
+        white-space: pre-wrap;
+        color: var(--error);
+        font-size: 0.9rem;
+      }
+      #status.success {
+        color: var(--success);
+      }
+      #capacity.over {
+        color: var(--error);
+      }
+      [hidden] {
+        display: none !important;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 700;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.85rem;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid var(--border);
+        overflow-wrap: anywhere;
+      }
+      code {
+        color: var(--accent);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      /* Shared offline-tools navigation; embedded to keep every page standalone. */
+      .tools-menu {
+        margin: 0 0 24px;
+        padding: 0;
+        border: 1px solid #303832;
+        border-radius: 12px;
+        background: #141816;
+        color: #f2f4ef;
+      }
+      .tools-menu > summary {
+        padding: 14px 18px;
+        color: #f2a900;
+        cursor: pointer;
+        font:
+          700 0.9rem/1.5 system-ui,
+          sans-serif;
+      }
+      .tools-menu > summary:focus-visible,
+      .tools-menu a:focus-visible {
+        outline: 2px solid #f2a900;
+        outline-offset: 3px;
+      }
+      .tools-menu nav {
+        display: block;
+        margin: 0;
+        padding: 0 12px 12px;
+        border: 0;
+        background: transparent;
+      }
+      .tools-menu ul {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .tools-menu li {
+        margin: 0;
+        padding: 0;
+      }
+      .tools-menu a {
+        display: block;
+        padding: 10px 12px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: #f2f4ef;
+        font:
+          500 0.88rem/1.5 system-ui,
+          sans-serif;
+        text-decoration: none;
+        overflow-wrap: anywhere;
+      }
+      .tools-menu a:hover {
+        background: #1a201d;
+        border-color: #4a554e;
+      }
+      .tools-menu a[aria-current="page"] {
+        color: #f2a900;
+        background: #f2a90014;
+        border-color: #f2a90055;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <details class="tools-menu">
+        <summary>Tools menu</summary>
+        <nav aria-label="Offline tools">
+          <ul>
+            <li>
+              <a href="./diceware-passphrase.html">Diceware passphrases</a>
+            </li>
+            <li>
+              <a href="./bip39-seed-generator.html">BIP39 seed generator</a>
+            </li>
+            <li>
+              <a href="./yeti-encoder-decoder.html">Yeti encoder / decoder</a>
+            </li>
+            <li><a href="./qr-file-transfer.html">QR file transfer</a></li>
+            <li>
+              <a href="./nfc-card-reader-writer.html"
+                >NFC card reader / writer</a
+              >
+            </li>
+            <li>
+              <a href="./secure-file-encryption.html">Secure file encryption</a>
+            </li>
+            <li><a href="./password-manager.html">Passwords and TOTP</a></li>
+            <li>
+              <a href="./one-time-pad-encryption.html"
+                >One-time pad encryption</a
+              >
+            </li>
+            <li>
+              <a href="./seed-one-time-pad-encryption.html"
+                >Seed one-time pad encryption</a
+              >
+            </li>
+            <li>
+              <a href="./lsb-steganography.html">LSB image steganography</a>
+            </li>
+            <li><a href="./monochrome-bitmap.html">Monochrome bitmap</a></li>
+            <li>
+              <a href="./obfuscated-pdf.html">Obfuscated PDF documents</a>
+            </li>
+            <li>
+              <a href="./text-steganography.html" aria-current="page"
+                >Text steganography</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </details>
+
+      <header>
+        <p class="eyebrow">Offline tools</p>
+        <h1>Text steganography</h1>
+        <p class="intro">
+          Hide ASCII text or raw bytes inside a random hex sequence, then
+          disguise that sequence as the "signature" of a plain-text purchase
+          order. A passphrase deterministically scatters which hex characters
+          carry data. Everything runs locally in your browser; nothing is
+          uploaded or saved by the page.
+        </p>
+      </header>
+      <form id="form" class="card">
+        <fieldset id="controls">
+          <fieldset>
+            <legend>Operation</legend>
+            <div class="choices">
+              <label
+                ><input
+                  type="radio"
+                  name="operation"
+                  id="embed"
+                  value="embed"
+                  checked
+                />
+                Hide data</label
+              ><label
+                ><input
+                  type="radio"
+                  name="operation"
+                  id="extract"
+                  value="extract"
+                />
+                Extract data</label
+              >
+            </div>
+          </fieldset>
+          <div id="embed-panel">
+            <fieldset>
+              <legend>Target text size</legend>
+              <div class="choices">
+                <label
+                  ><input type="radio" name="bits" id="bits-512" value="512" />
+                  512 bits</label
+                ><label
+                  ><input
+                    type="radio"
+                    name="bits"
+                    id="bits-1024"
+                    value="1024"
+                  />
+                  1024 bits</label
+                ><label
+                  ><input
+                    type="radio"
+                    name="bits"
+                    id="bits-2048"
+                    value="2048"
+                    checked
+                  />
+                  2048 bits</label
+                ><label
+                  ><input
+                    type="radio"
+                    name="bits"
+                    id="bits-4096"
+                    value="4096"
+                  />
+                  4096 bits</label
+                >
+              </div>
+            </fieldset>
+            <div class="section">
+              <label class="label" for="target-hex"
+                >Target hex text (the cover sequence)</label
+              ><textarea
+                id="target-hex"
+                spellcheck="false"
+                autocapitalize="off"
+              ></textarea>
+              <p id="target-info" class="muted"></p>
+              <div class="actions">
+                <button id="regenerate" type="button">
+                  Generate random text
+                </button>
+              </div>
+            </div>
+            <div class="section">
+              <fieldset>
+                <legend>Payload format</legend>
+                <div class="choices">
+                  <label
+                    ><input
+                      type="radio"
+                      name="format"
+                      id="ascii-mode"
+                      value="ascii"
+                      checked
+                    />
+                    ASCII text</label
+                  ><label
+                    ><input
+                      type="radio"
+                      name="format"
+                      id="hex-mode"
+                      value="hex"
+                    />
+                    Hex bytes</label
+                  >
+                </div>
+              </fieldset>
+              <label class="label" for="payload" id="payload-label"
+                >ASCII text to hide</label
+              ><textarea
+                id="payload"
+                spellcheck="false"
+                autocapitalize="off"
+              ></textarea>
+              <p id="payload-help" class="muted"></p>
+              <p id="capacity" class="muted"></p>
+            </div>
+          </div>
+          <div id="extract-panel" class="section" hidden>
+            <label class="label" for="document-text"
+              >Document text (paste the whole document, or just the
+              signature)</label
+            ><textarea
+              id="document-text"
+              spellcheck="false"
+              autocapitalize="off"
+            ></textarea>
+          </div>
+          <div class="password">
+            <label class="label" for="passphrase">Passphrase</label
+            ><input
+              id="passphrase"
+              type="password"
+              autocomplete="new-password"
+              required
+            /><label class="show"
+              ><input id="show-passphrase" type="checkbox" /> Show
+              passphrase</label
+            >
+          </div>
+          <div id="confirm-panel" class="password">
+            <label class="label" for="confirm">Confirm passphrase</label
+            ><input id="confirm" type="password" autocomplete="new-password" />
+          </div>
+          <p class="muted" id="passphrase-help">
+            The passphrase selects which hex characters carry data. Without it
+            the hidden characters cannot be located.
+          </p>
+          <div class="actions">
+            <button id="submit" type="submit">Hide data</button
+            ><button id="clear" type="button" class="secondary">Clear</button>
+          </div>
+        </fieldset>
+      </form>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="result" class="card" hidden>
+        <h2 id="result-title">Result</h2>
+        <p id="result-info"></p>
+        <div id="document-panel" hidden>
+          <label class="label" for="document-output" style="margin-top: 0"
+            >Purchase order document</label
+          ><textarea
+            id="document-output"
+            readonly
+            spellcheck="false"
+          ></textarea>
+          <p class="muted">
+            Download the PDF to send as-is, or copy the plain text above. The
+            PDF wraps the signature across several printed lines at larger sizes
+            for readability; for extraction, paste the plain text shown here (or
+            the signature-only field below) rather than text copied out of the
+            PDF viewer, since some viewers insert line breaks where the PDF
+            wrapped the signature.
+          </p>
+          <div class="actions">
+            <button id="copy-document" type="button">Copy document</button>
+          </div>
+          <details class="section">
+            <summary>Signature only (Base58)</summary>
+            <textarea
+              id="signature-output"
+              readonly
+              spellcheck="false"
+              style="min-height: 90px; margin-top: 12px"
+            ></textarea>
+            <div class="actions">
+              <button id="copy-signature" type="button">Copy signature</button>
+            </div>
+          </details>
+        </div>
+        <div id="output-panel" hidden>
+          <label for="output" class="label" id="output-label"
+            >Extracted data</label
+          ><textarea id="output" readonly spellcheck="false"></textarea>
+        </div>
+        <div class="actions">
+          <a id="download" class="download" download>Download</a>
+        </div>
+      </section>
+      <p class="muted">
+        PBKDF2-SHA-256 · 600,000 iterations · random 16-byte salt · AES-256-CTR
+        keystream RNG · Fisher–Yates sampling · 1 hex character (4 bits) per
+        position. The payload itself is not encrypted: anyone with the
+        passphrase can read it. To protect the content as well, encrypt it first
+        with
+        <a href="./secure-file-encryption.html" style="color: var(--accent)"
+          >Secure file encryption</a
+        >
+        and hide the result as hex bytes. Any edit to the characters of the
+        signature itself (not just surrounding wording) destroys the hidden
+        data, so copy it exactly. The downloaded file is a plain, uncompressed
+        PDF generated entirely in the page with the standard Helvetica fonts and
+        no metadata.
+      </p>
+      <details class="card">
+        <summary>Embedding algorithm and format</summary>
+        <p>
+          The target text is a sequence of <code>L</code> lowercase hex
+          characters, <code>L</code> being 128, 256, 512 or 1024 (512, 1024,
+          2048 or 4096 bits). Each character is one nibble (4 bits) and can be
+          replaced independently, unlike image LSB steganography which only
+          flips a bit's least significant bit.
+        </p>
+        <ol>
+          <li>
+            <p>
+              A random 16-byte salt (128 bits) is written as 32 literal hex
+              characters at the start of the sequence. These 32 characters are
+              excluded from everything that follows.
+            </p>
+          </li>
+          <li>
+            <p>
+              The UTF-8 passphrase and salt go through PBKDF2-SHA-256 with
+              600,000 iterations; <code>crypto.subtle.deriveBits</code> returns
+              256 bits that become an AES-256-CTR key. The RNG is the AES-CTR
+              keystream of zero bytes with an all-zero initial 128-bit counter
+              block (64-bit big-endian counter), consumed most significant bit
+              first.
+            </p>
+          </li>
+          <li>
+            <p>
+              The remaining <code>M = L − 32</code> characters form the pool. A
+              partial Fisher–Yates shuffle picks characters one at a time: for
+              step <code>i</code>, <code>j = i + uniform(M − i)</code>, swap
+              pool positions <code>i</code> and <code>j</code>, and use the
+              character now at position <code>i</code>.
+              <code>uniform(n)</code> reads only <code>ceil(log2(n))</code> bits
+              and rejects values ≥ <code>n</code> to stay unbiased.
+            </p>
+          </li>
+          <li>
+            <p>
+              The record below is written nibble by nibble (high nibble of each
+              byte first) into the chosen characters. Extraction repeats the
+              same steps, reading the header first to learn how many more
+              characters to visit.
+            </p>
+          </li>
+        </ol>
+        <table>
+          <thead>
+            <tr>
+              <th>Byte offset</th>
+              <th>Bytes</th>
+              <th>Field</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>0</td>
+              <td>4</td>
+              <td>Magic: ASCII STXT</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>1</td>
+              <td>Version: 1</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>1</td>
+              <td>Payload type: 0 = ASCII text, 1 = binary (from hex)</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>4</td>
+              <td>Payload length in bytes, unsigned big-endian</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>4</td>
+              <td>First 4 bytes of SHA-256(payload)</td>
+            </tr>
+            <tr>
+              <td>14</td>
+              <td>Length</td>
+              <td>
+                Payload bytes. Hex input is stored as the raw bytes it
+                represents, not as hex characters.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Capacity in bytes is <code>floor(M / 2) − 14</code>: 34 bytes at 512
+          bits, 98 bytes at 1024 bits, 226 bytes at 2048 bits, 482 bytes at 4096
+          bits. The checksum detects a wrong passphrase or a modified sequence;
+          it is not a cryptographic authenticator.
+        </p>
+        <p>
+          The full <code>L</code>-character sequence (salt plus scattered
+          payload) is packed as <code>L / 2</code> raw bytes and Base58-encoded
+          (same alphabet as Bitcoin, leading zero bytes preserved as leading "1"
+          characters). That string is placed on its own line in a generated
+          purchase order document as a "Signature" value, and the document is
+          offered both as plain text (shown in the page) and as a downloadable
+          PDF built in the page with a minimal, uncompressed PDF 1.4 writer
+          (standard, non-embedded Helvetica fonts, Letter pages, no metadata).
+          The PDF word-wraps ordinary text and hard character-wraps the
+          signature itself, since it has no spaces to wrap at; this only affects
+          how it prints, not the underlying characters. Extraction scans the
+          pasted text for the longest run of 20 or more consecutive Base58
+          characters, Base58-decodes it, checks that the decoded byte length
+          matches one of the four supported sizes, and runs the same scatter
+          algorithm to read the header and payload. Surrounding wording can be
+          freely edited or replaced as long as the signature characters
+          themselves stay intact and on one unbroken run, which is why
+          extraction should use the plain text (or the signature-only field)
+          rather than text copied back out of the PDF.
+        </p>
+      </details>
+    </main>
+    <script>
+      "use strict";
+      const STEGO = Object.freeze({
+        iterations: 600000,
+        saltBytes: 16,
+        headerBytes: 14,
+        version: 1,
+        magic: [83, 84, 88, 84],
+        chunk: 65536,
+      });
+      const SALT_CHARS = STEGO.saltBytes * 2;
+      const TARGET_BITS = Object.freeze([512, 1024, 2048, 4096]);
+      const TYPE = Object.freeze({ ascii: 0, binary: 1 });
+      const utf8 = new TextEncoder();
+      const BASE58 =
+        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+      function asciiBytes(text) {
+        const bytes = new Uint8Array(text.length);
+        for (let i = 0; i < text.length; i++) {
+          const code = text.charCodeAt(i);
+          if (code > 127)
+            throw new Error(
+              "Only ASCII characters are allowed. Character " +
+                (i + 1) +
+                " (" +
+                JSON.stringify(text[i]) +
+                ") is not ASCII.",
+            );
+          bytes[i] = code;
+        }
+        return bytes;
+      }
+      function hexBytes(text) {
+        const value = text.replace(/\s/g, "");
+        if (!/^(?:[0-9a-fA-F]{2})*$/.test(value))
+          throw new Error(
+            "Hex input must contain only pairs of hexadecimal digits (0-9, a-f), optionally separated by whitespace.",
+          );
+        const bytes = new Uint8Array(value.length / 2);
+        for (let i = 0; i < bytes.length; i++)
+          bytes[i] = parseInt(value.substr(i * 2, 2), 16);
+        return bytes;
+      }
+      function toHex(bytes) {
+        return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
+          "",
+        );
+      }
+      function isAscii(bytes) {
+        return bytes.every((b) => b < 128);
+      }
+
+      function charLayout(length) {
+        if (!TARGET_BITS.includes(length * 4))
+          throw new Error(
+            "Target text must be exactly " +
+              TARGET_BITS.map((bits) => bits / 4).join(", ") +
+              " hex characters (" +
+              TARGET_BITS.join("/") +
+              " bits).",
+          );
+        const poolSize = length - SALT_CHARS;
+        return {
+          poolSize,
+          pool: (i) => SALT_CHARS + i,
+          capacity: Math.max(0, Math.floor(poolSize / 2) - STEGO.headerBytes),
+        };
+      }
+      function randomTargetHex(bits) {
+        if (!TARGET_BITS.includes(bits))
+          throw new Error("Unsupported target text size.");
+        return toHex(crypto.getRandomValues(new Uint8Array(bits / 8))).split(
+          "",
+        );
+      }
+      function writeSalt(hexChars, salt) {
+        const saltHex = toHex(salt);
+        for (let i = 0; i < SALT_CHARS; i++) hexChars[i] = saltHex[i];
+      }
+      function readSalt(hexChars) {
+        return hexBytes(hexChars.slice(0, SALT_CHARS).join(""));
+      }
+
+      async function deriveSeed(passphrase, salt) {
+        if (!passphrase) throw new Error("Enter a passphrase.");
+        const material = await crypto.subtle.importKey(
+          "raw",
+          utf8.encode(passphrase),
+          "PBKDF2",
+          false,
+          ["deriveBits"],
+        );
+        return new Uint8Array(
+          await crypto.subtle.deriveBits(
+            {
+              name: "PBKDF2",
+              salt,
+              iterations: STEGO.iterations,
+              hash: "SHA-256",
+            },
+            material,
+            256,
+          ),
+        );
+      }
+      // Deterministic bit source: AES-256-CTR keystream, consumed most significant bit first.
+      class KeystreamRng {
+        static async create(seed) {
+          try {
+            return new KeystreamRng(
+              await crypto.subtle.importKey(
+                "raw",
+                seed,
+                { name: "AES-CTR" },
+                false,
+                ["encrypt"],
+              ),
+            );
+          } finally {
+            seed.fill(0);
+          }
+        }
+        constructor(key) {
+          this.key = key;
+          this.block = 0;
+          this.buffer = new Uint8Array(0);
+          this.position = 0;
+          this.acc = 0;
+          this.accBits = 0;
+        }
+        async refill() {
+          const counter = new Uint8Array(16);
+          new DataView(counter.buffer).setBigUint64(8, BigInt(this.block));
+          this.buffer = new Uint8Array(
+            await crypto.subtle.encrypt(
+              { name: "AES-CTR", counter, length: 64 },
+              this.key,
+              new Uint8Array(STEGO.chunk),
+            ),
+          );
+          this.block += STEGO.chunk / 16;
+          this.position = 0;
+        }
+        async bits(count) {
+          while (this.accBits < count) {
+            if (this.position >= this.buffer.length) await this.refill();
+            this.acc = this.acc * 256 + this.buffer[this.position++];
+            this.accBits += 8;
+          }
+          const rest = 2 ** (this.accBits - count),
+            value = Math.floor(this.acc / rest);
+          this.acc %= rest;
+          this.accBits -= count;
+          return value;
+        }
+        // Unbiased integer in [0, n): reads only the bits needed for n - 1 and rejects out-of-range values.
+        async uniform(n) {
+          if (n <= 1) return 0;
+          const width = 32 - Math.clz32(n - 1);
+          for (;;) {
+            const value = await this.bits(width);
+            if (value < n) return value;
+          }
+        }
+      }
+      // Partial Fisher–Yates shuffle over the pool, materializing only swapped positions.
+      class ScatterSampler {
+        constructor(rng, size) {
+          this.rng = rng;
+          this.size = size;
+          this.index = 0;
+          this.swaps = new Map();
+        }
+        async next() {
+          if (this.index >= this.size)
+            throw new Error(
+              "The target text does not have enough characters for this payload.",
+            );
+          const i = this.index++,
+            j = i + (await this.rng.uniform(this.size - i));
+          const atI = this.swaps.has(i) ? this.swaps.get(i) : i,
+            atJ = this.swaps.has(j) ? this.swaps.get(j) : j;
+          this.swaps.set(j, atI);
+          this.swaps.delete(i);
+          return atJ;
+        }
+      }
+      // Character cursor: each sampled pool position is one hex nibble.
+      class ScatterChars {
+        constructor(hexChars, layout, rng) {
+          this.hexChars = hexChars;
+          this.layout = layout;
+          this.sampler = new ScatterSampler(rng, layout.poolSize);
+          this.used = 0;
+        }
+        async position() {
+          const i = await this.sampler.next();
+          this.used++;
+          return this.layout.pool(i);
+        }
+        async write(bytes) {
+          for (let k = 0; k < bytes.length * 2; k++) {
+            const pos = await this.position();
+            const nibble =
+              k % 2 === 0 ? bytes[k >> 1] >> 4 : bytes[k >> 1] & 15;
+            this.hexChars[pos] = nibble.toString(16);
+          }
+        }
+        async read(length) {
+          const bytes = new Uint8Array(length);
+          for (let k = 0; k < length * 2; k++) {
+            const pos = await this.position();
+            const nibble = parseInt(this.hexChars[pos], 16);
+            if (k % 2 === 0) bytes[k >> 1] = nibble << 4;
+            else bytes[k >> 1] |= nibble;
+          }
+          return bytes;
+        }
+      }
+      async function checksum(bytes) {
+        return new Uint8Array(
+          await crypto.subtle.digest("SHA-256", bytes),
+        ).subarray(0, 4);
+      }
+
+      async function embedPayload(hexChars, payload, type, passphrase) {
+        if (!payload.length) throw new Error("Enter data to hide.");
+        const layout = charLayout(hexChars.length);
+        if (payload.length > layout.capacity)
+          throw new Error(
+            "Payload is " +
+              payload.length.toLocaleString() +
+              " bytes but this target text can hold at most " +
+              layout.capacity.toLocaleString() +
+              " bytes.",
+          );
+        const header = new Uint8Array(STEGO.headerBytes);
+        header.set(STEGO.magic);
+        header[4] = STEGO.version;
+        header[5] = type;
+        new DataView(header.buffer).setUint32(6, payload.length);
+        header.set(await checksum(payload), 10);
+        const salt = crypto.getRandomValues(new Uint8Array(STEGO.saltBytes));
+        const scatter = new ScatterChars(
+          hexChars,
+          layout,
+          await KeystreamRng.create(await deriveSeed(passphrase, salt)),
+        );
+        writeSalt(hexChars, salt);
+        await scatter.write(header);
+        await scatter.write(payload);
+        return {
+          charsUsed: scatter.used + SALT_CHARS,
+          capacity: layout.capacity,
+          bytes: payload.length,
+        };
+      }
+      async function extractPayload(hexChars, passphrase) {
+        const layout = charLayout(hexChars.length);
+        const scatter = new ScatterChars(
+          hexChars,
+          layout,
+          await KeystreamRng.create(
+            await deriveSeed(passphrase, readSalt(hexChars)),
+          ),
+        );
+        const notFound =
+          "No hidden data found. The passphrase may be wrong, or the target text was modified after embedding.";
+        if (Math.floor(layout.poolSize / 2) < STEGO.headerBytes)
+          throw new Error(notFound);
+        const header = await scatter.read(STEGO.headerBytes);
+        if (STEGO.magic.some((b, i) => header[i] !== b))
+          throw new Error(notFound);
+        if (header[4] !== STEGO.version)
+          throw new Error("Unsupported hidden data version " + header[4] + ".");
+        const type = header[5],
+          length = new DataView(header.buffer).getUint32(6);
+        if (type !== TYPE.ascii && type !== TYPE.binary)
+          throw new Error("Unknown hidden payload type.");
+        if (!length || length > layout.capacity)
+          throw new Error(
+            "Hidden data length is invalid. The target text may be damaged.",
+          );
+        const payload = await scatter.read(length);
+        const expected = await checksum(payload);
+        if (expected.some((b, i) => header[10 + i] !== b))
+          throw new Error(
+            "Hidden data is damaged: checksum mismatch. The target text was likely modified after embedding.",
+          );
+        return { type, payload };
+      }
+
+      function base58Encode(bytes) {
+        let leadingZeros = 0;
+        while (leadingZeros < bytes.length && bytes[leadingZeros] === 0)
+          leadingZeros++;
+        let value = 0n;
+        for (let i = leadingZeros; i < bytes.length; i++)
+          value = (value << 8n) | BigInt(bytes[i]);
+        const digits = [];
+        while (value > 0n) {
+          digits.push(BASE58[Number(value % 58n)]);
+          value /= 58n;
+        }
+        return "1".repeat(leadingZeros) + digits.reverse().join("");
+      }
+      function base58Decode(text) {
+        if (!text) throw new Error("Enter a Base58 signature.");
+        for (const char of text)
+          if (!BASE58.includes(char))
+            throw new Error(
+              "Invalid Base58 character: " + JSON.stringify(char) + ".",
+            );
+        let value = 0n;
+        for (const char of text)
+          value = value * 58n + BigInt(BASE58.indexOf(char));
+        const bytes = [];
+        while (value > 0n) {
+          bytes.push(Number(value & 255n));
+          value >>= 8n;
+        }
+        const zeros = text.match(/^1*/)[0].length;
+        const result = new Uint8Array(zeros + bytes.length);
+        result.set(bytes.reverse(), zeros);
+        return result;
+      }
+      function findSignatureToken(text) {
+        const matches = text.match(/[1-9A-HJ-NP-Za-km-z]{20,}/g);
+        if (!matches || !matches.length)
+          throw new Error("No signature was found in the pasted text.");
+        return matches.reduce((best, m) => (m.length > best.length ? m : best));
+      }
+      function hexCharsFromSignature(token) {
+        const bytes = base58Decode(token);
+        if (!TARGET_BITS.includes(bytes.length * 8))
+          throw new Error(
+            "Decoded signature is " +
+              bytes.length.toLocaleString() +
+              " bytes, which does not match a supported target size (" +
+              TARGET_BITS.map((bits) => bits / 8).join("/") +
+              " bytes for " +
+              TARGET_BITS.join("/") +
+              "-bit target text).",
+          );
+        return { hexChars: toHex(bytes).split(""), bits: bytes.length * 8 };
+      }
+
+      // Minimal PDF 1.4 writer: one Letter page size, standard Helvetica fonts
+      // (not embedded), uncompressed content, no metadata. ASCII text only.
+      const PDF_PAGE = Object.freeze({
+        width: 612,
+        height: 792,
+        margin: 72,
+        size: 10.5,
+        leading: 14,
+        titleSize: 15,
+        titleLeading: 21,
+      });
+      // Advance widths (1/1000 em) for ASCII 32-126 from the standard Helvetica and Helvetica-Bold AFMs.
+      const PDF_WIDTHS = Object.freeze({
+        F1: [
+          278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333,
+          278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278,
+          584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278,
+          500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944,
+          667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556,
+          278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500,
+          278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584,
+        ],
+        F2: [
+          278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333,
+          278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333,
+          584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278,
+          556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944,
+          667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556,
+          333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556,
+          333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584,
+        ],
+      });
+      function pdfGlyphWidth(ch, font) {
+        const code = ch.charCodeAt(0);
+        if (code < 0x20 || code > 0x7e)
+          throw new Error(
+            "The document can only contain plain ASCII text for the PDF (found " +
+              JSON.stringify(ch) +
+              ").",
+          );
+        return PDF_WIDTHS[font][code - 32];
+      }
+      function pdfTextWidth(text, size, font = "F1") {
+        let units = 0;
+        for (const ch of text) units += pdfGlyphWidth(ch, font);
+        return (units * size) / 1000;
+      }
+      function pdfBytes(text) {
+        return Uint8Array.from(text, (ch) => ch.charCodeAt(0));
+      }
+      function pdfString(text) {
+        return "(" + text.replace(/[\\()]/g, "\\$&") + ")";
+      }
+      // Greedy word wrap; falls back to hard character wrapping for a single
+      // run with no spaces (e.g. the Base58 signature), which never fits one line.
+      function pdfWrapLine(text, size, maxWidth, font = "F1") {
+        const words = text.split(/ +/).filter(Boolean);
+        if (words.length <= 1) {
+          const lines = [];
+          let line = "";
+          for (const ch of text) {
+            const next = line + ch;
+            if (line && pdfTextWidth(next, size, font) > maxWidth) {
+              lines.push(line);
+              line = ch;
+            } else line = next;
+          }
+          if (line || !lines.length) lines.push(line);
+          return lines;
+        }
+        const lines = [];
+        let line = "";
+        for (const word of words) {
+          const next = line ? line + " " + word : word;
+          if (line && pdfTextWidth(next, size, font) > maxWidth) {
+            lines.push(line);
+            line = word;
+          } else line = next;
+        }
+        if (line) lines.push(line);
+        return lines;
+      }
+      function pdfTextOp(font, size, x, y, text) {
+        return { font, size, x, y, text };
+      }
+      function pdfPageContent(ops) {
+        const n = (v) => String(Number(v.toFixed(2)));
+        return ops
+          .map(
+            (op) =>
+              "BT /" +
+              op.font +
+              " " +
+              n(op.size) +
+              " Tf 0 g 1 0 0 1 " +
+              n(op.x) +
+              " " +
+              n(op.y) +
+              " Tm " +
+              pdfString(op.text) +
+              " Tj ET",
+          )
+          .join("\n");
+      }
+      // Lays out a plain-text document (one array entry per line, "" for a
+      // blank line) across as many Letter pages as needed. The first line is
+      // rendered as a bold title.
+      function layoutDocumentPdf(lines) {
+        const width = PDF_PAGE.width - 2 * PDF_PAGE.margin,
+          bottom = PDF_PAGE.margin,
+          pages = [[]];
+        let y = PDF_PAGE.height - PDF_PAGE.margin;
+        const place = (font, size, leading, text) => {
+          if (y - leading < bottom) {
+            pages.push([]);
+            y = PDF_PAGE.height - PDF_PAGE.margin;
+          }
+          y -= leading;
+          if (text)
+            pages.at(-1).push(pdfTextOp(font, size, PDF_PAGE.margin, y, text));
+        };
+        lines.forEach((raw, i) => {
+          const title = i === 0,
+            font = title ? "F2" : "F1",
+            size = title ? PDF_PAGE.titleSize : PDF_PAGE.size,
+            leading = title ? PDF_PAGE.titleLeading : PDF_PAGE.leading;
+          if (!raw) {
+            place(font, size, leading, "");
+            return;
+          }
+          for (const line of pdfWrapLine(raw, size, width, font))
+            place(font, size, leading, line);
+        });
+        return pages;
+      }
+      function buildDocumentPdf(lines) {
+        const pages = layoutDocumentPdf(lines),
+          objects = [];
+        const pageIds = pages.map((_, i) => 5 + i * 2);
+        objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+        objects[2] =
+          "<< /Type /Pages /Kids [" +
+          pageIds.map((id) => id + " 0 R").join(" ") +
+          "] /Count " +
+          pages.length +
+          " >>";
+        objects[3] =
+          "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+        objects[4] =
+          "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+        pages.forEach((ops, i) => {
+          const content = pdfPageContent(ops);
+          objects[pageIds[i]] =
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " +
+            PDF_PAGE.width +
+            " " +
+            PDF_PAGE.height +
+            "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " +
+            (pageIds[i] + 1) +
+            " 0 R >>";
+          objects[pageIds[i] + 1] =
+            "<< /Length " +
+            content.length +
+            " >>\nstream\n" +
+            content +
+            "\nendstream";
+        });
+        let pdf = "%PDF-1.4\n";
+        const offsets = [];
+        for (let id = 1; id < objects.length; id++) {
+          offsets[id] = pdf.length;
+          pdf += id + " 0 obj\n" + objects[id] + "\nendobj\n";
+        }
+        const xref = pdf.length;
+        pdf += "xref\n0 " + objects.length + "\n0000000000 65535 f \n";
+        for (let id = 1; id < objects.length; id++)
+          pdf += String(offsets[id]).padStart(10, "0") + " 00000 n \n";
+        pdf +=
+          "trailer\n<< /Size " +
+          objects.length +
+          " /Root 1 0 R >>\nstartxref\n" +
+          xref +
+          "\n%%EOF\n";
+        return pdfBytes(pdf);
+      }
+    </script>
+    <script>
+      "use strict";
+      const $ = (id) => document.getElementById(id);
+      let downloadUrl = null;
+      function clearResult() {
+        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+        downloadUrl = null;
+        $("download").removeAttribute("href");
+        $("result").hidden = true;
+        $("document-output").value = "";
+        $("signature-output").value = "";
+        $("document-panel").hidden = true;
+        $("output").value = "";
+        $("output-panel").hidden = true;
+        $("status").textContent = "";
+        $("status").className = "";
+      }
+      function selectedBits() {
+        return Number(
+          document.querySelector('input[name="bits"]:checked').value,
+        );
+      }
+      function payloadBytes() {
+        return $("hex-mode").checked
+          ? hexBytes($("payload").value)
+          : asciiBytes($("payload").value);
+      }
+      function parseTargetHex(text) {
+        const value = text.trim().toLowerCase();
+        if (!/^[0-9a-f]+$/.test(value))
+          throw new Error(
+            "Target text must contain only hexadecimal characters (0-9, a-f).",
+          );
+        return charLayout(value.length) && value.split("");
+      }
+      function updateTargetInfo() {
+        $("target-info").textContent = "";
+        $("target-info").className = "muted";
+        try {
+          const hexChars = parseTargetHex($("target-hex").value);
+          $("target-info").textContent =
+            hexChars.length.toLocaleString() +
+            " hex characters (" +
+            (hexChars.length * 4).toLocaleString() +
+            " bits).";
+        } catch (error) {
+          $("target-info").textContent = error.message;
+          $("target-info").className = "muted over";
+        }
+      }
+      function updateCapacity() {
+        $("capacity").textContent = "";
+        $("capacity").className = "muted";
+        let size = null;
+        try {
+          size = payloadBytes().length;
+          $("payload-help").textContent =
+            size.toLocaleString() +
+            " bytes" +
+            ($("hex-mode").checked ? " (hex is stored as raw bytes)" : "") +
+            ".";
+        } catch (error) {
+          $("payload-help").textContent = error.message;
+        }
+        try {
+          const layout = charLayout(
+            parseTargetHex($("target-hex").value).length,
+          );
+          if (size !== null) {
+            $("capacity").textContent =
+              "Using " +
+              size.toLocaleString() +
+              " of " +
+              layout.capacity.toLocaleString() +
+              " available bytes.";
+            if (size > layout.capacity) $("capacity").className = "muted over";
+          }
+        } catch {
+          // Target text errors are already shown by updateTargetInfo().
+        }
+      }
+      function regenerate() {
+        $("target-hex").value = randomTargetHex(selectedBits()).join("");
+        clearResult();
+        updateTargetInfo();
+        updateCapacity();
+      }
+      function updateMode() {
+        clearResult();
+        const extract = $("extract").checked;
+        $("embed-panel").hidden = extract;
+        $("extract-panel").hidden = !extract;
+        $("confirm-panel").hidden = extract;
+        $("confirm").required = !extract;
+        $("passphrase").autocomplete = extract
+          ? "current-password"
+          : "new-password";
+        $("submit").textContent = extract ? "Extract data" : "Hide data";
+      }
+      function randomOrderNumber() {
+        const n =
+          (crypto.getRandomValues(new Uint32Array(1))[0] % 900000) + 100000;
+        return "PO-" + n;
+      }
+      function buildDocument(token) {
+        return [
+          "PURCHASE ORDER",
+          "",
+          "Order Number: " + randomOrderNumber(),
+          "Date: " + new Date().toISOString().slice(0, 10),
+          "",
+          "Vendor:",
+          "Keystone Supply Partners",
+          "118 Harbor Row, Suite 4",
+          "Portland, OR 97201",
+          "",
+          "Bill To:",
+          "Operations Department",
+          "",
+          "Line Items:",
+          "  1. Industrial shelving units        Qty 12   $184.00 ea   $2,208.00",
+          "  2. Anti-static floor mats           Qty 30   $26.50 ea    $795.00",
+          "  3. Warehouse LED fixtures           Qty 18   $64.75 ea    $1,165.50",
+          "",
+          "Subtotal: $4,168.50",
+          "Shipping: $145.00",
+          "Total:    $4,313.50",
+          "",
+          "Terms: Net 30. Payment due within 30 days of delivery.",
+          "",
+          "This purchase order is authenticated with a digital signature.",
+          "The signature below certifies that this document has not been",
+          "altered since it was issued.",
+          "",
+          "Signature (Base58):",
+          token,
+          "",
+          "Please retain this document for your records.",
+        ];
+      }
+
+      for (const id of ["embed", "extract"])
+        $(id).addEventListener("change", updateMode);
+      for (const id of ["bits-512", "bits-1024", "bits-2048", "bits-4096"])
+        $(id).addEventListener("change", regenerate);
+      $("regenerate").addEventListener("click", regenerate);
+      $("target-hex").addEventListener("input", () => {
+        clearResult();
+        updateTargetInfo();
+        updateCapacity();
+      });
+      for (const id of ["ascii-mode", "hex-mode", "payload"])
+        $(id).addEventListener(id === "payload" ? "input" : "change", () => {
+          clearResult();
+          $("payload-label").textContent = $("hex-mode").checked
+            ? "Hex bytes to hide"
+            : "ASCII text to hide";
+          updateCapacity();
+        });
+      for (const id of ["passphrase", "confirm", "document-text"])
+        $(id).addEventListener("input", clearResult);
+      $("show-passphrase").addEventListener("change", () => {
+        for (const id of ["passphrase", "confirm"])
+          $(id).type = $("show-passphrase").checked ? "text" : "password";
+      });
+      $("clear").addEventListener("click", () => {
+        $("form").reset();
+        $("passphrase").type = "password";
+        $("confirm").type = "password";
+        updateMode();
+        regenerate();
+      });
+      async function copyTo(button, text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          const original = button.textContent;
+          button.textContent = "Copied!";
+          setTimeout(() => (button.textContent = original), 1500);
+        } catch {
+          button.textContent = "Copy failed — select and copy manually";
+        }
+      }
+      $("copy-document").addEventListener("click", () =>
+        copyTo($("copy-document"), $("document-output").value),
+      );
+      $("copy-signature").addEventListener("click", () =>
+        copyTo($("copy-signature"), $("signature-output").value),
+      );
+      $("form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        clearResult();
+        const extract = $("extract").checked,
+          passphrase = $("passphrase").value;
+        $("controls").disabled = true;
+        $("status").textContent = extract
+          ? "Deriving key and extracting…"
+          : "Deriving key and hiding data…";
+        try {
+          if (!globalThis.crypto?.subtle)
+            throw new Error(
+              "Web Crypto is unavailable. Open this page in a modern browser using a local file or HTTPS.",
+            );
+          if (!passphrase) throw new Error("Enter a passphrase.");
+          if (!extract && passphrase !== $("confirm").value)
+            throw new Error("Passphrases do not match.");
+          let downloadBlob, downloadName;
+          if (extract) {
+            const token = findSignatureToken($("document-text").value);
+            const { hexChars, bits } = hexCharsFromSignature(token);
+            const result = await extractPayload(hexChars, passphrase);
+            const text = result.type === TYPE.ascii && isAscii(result.payload);
+            $("output").value = text
+              ? new TextDecoder("ascii").decode(result.payload)
+              : toHex(result.payload);
+            $("output-label").textContent = text
+              ? "Extracted ASCII text"
+              : "Extracted bytes (hex)";
+            $("output-panel").hidden = false;
+            downloadBlob = new Blob([result.payload], {
+              type: text ? "text/plain" : "application/octet-stream",
+            });
+            downloadName = text ? "hidden.txt" : "hidden.bin";
+            $("result-title").textContent = "Hidden data extracted";
+            $("result-info").textContent =
+              "Detected " +
+              bits.toLocaleString() +
+              "-bit target text (" +
+              (bits / 4).toLocaleString() +
+              " hex characters) · " +
+              result.payload.length.toLocaleString() +
+              " bytes · " +
+              (text ? "ASCII text" : "binary") +
+              " · checksum verified.";
+          } else {
+            const payload = payloadBytes();
+            const hexChars = parseTargetHex($("target-hex").value);
+            const info = await embedPayload(
+              hexChars,
+              payload,
+              $("hex-mode").checked ? TYPE.binary : TYPE.ascii,
+              passphrase,
+            );
+            const token = base58Encode(hexBytes(hexChars.join("")));
+            const lines = buildDocument(token);
+            $("document-output").value = lines.join("\n");
+            $("signature-output").value = token;
+            $("document-panel").hidden = false;
+            downloadBlob = new Blob([buildDocumentPdf(lines)], {
+              type: "application/pdf",
+            });
+            downloadName = "purchase-order-signed.pdf";
+            $("result-title").textContent = "Data hidden successfully";
+            $("result-info").textContent =
+              info.bytes.toLocaleString() +
+              " of " +
+              info.capacity.toLocaleString() +
+              " bytes used · " +
+              info.charsUsed.toLocaleString() +
+              " hex characters touched · " +
+              token.length.toLocaleString() +
+              "-character Base58 signature.";
+          }
+          downloadUrl = URL.createObjectURL(downloadBlob);
+          $("download").href = downloadUrl;
+          $("download").download = downloadName;
+          $("download").textContent = "Download " + downloadName;
+          $("result").hidden = false;
+          $("status").textContent = "";
+        } catch (error) {
+          clearResult();
+          $("status").textContent = error.message || "Operation failed.";
+          $("status").className = "error";
+        } finally {
+          $("controls").disabled = false;
+        }
+      });
+      window.addEventListener("pagehide", clearResult);
+      updateMode();
+      regenerate();
+    </script>
+  </body>
+</html>
