@@ -194,14 +194,7 @@ test("the PDF writer is well-formed, ASCII-only, and hard-wraps a spaceless sign
     "pw",
   );
   const signature = core.base58Encode(core.hexBytes(hex.join("")));
-  const lines = [
-    "PURCHASE ORDER",
-    "",
-    "Signature (Base58):",
-    signature,
-    "",
-    "Thanks.",
-  ];
+  const lines = ["PURCHASE ORDER", "", "Signature:", signature, "", "Thanks."];
   const bytes = core.buildDocumentPdf(lines);
   const pdf = Buffer.from(bytes).toString("latin1");
   assert.ok(pdf.startsWith("%PDF-1.4\n"));
@@ -233,7 +226,7 @@ test("the PDF paginates onto a second page once a document runs past one page", 
   const lines = [
     "PURCHASE ORDER",
     ...Array.from({ length: 40 }, (_, i) => "Line " + i),
-    "Signature (Base58):",
+    "Signature:",
     signature,
   ];
   const bytes = core.buildDocumentPdf(lines);
