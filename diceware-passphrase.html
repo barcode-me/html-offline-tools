@@ -185,6 +185,14 @@
         min-height: 1.6em;
         color: #ffd479;
       }
+      #casing-digits {
+        display: block;
+        letter-spacing: 0.3em;
+        font:
+          1.5rem ui-monospace,
+          monospace;
+        overflow-wrap: anywhere;
+      }
       #words {
         display: flex;
         gap: 8px;
@@ -391,9 +399,10 @@
         </div>
         <div class="option">
           <label
-            ><input type="checkbox" id="use-separator" />Add separators?</label
+            ><input type="checkbox" id="use-separator" checked />Add
+            separators?</label
           >
-          <div id="separator-options" hidden>
+          <div id="separator-options">
             <label for="separator">Word separator</label
             ><select id="separator">
               <option value=" ">Space</option>
@@ -428,14 +437,20 @@
           <div class="actions">
             <button id="random-case" type="button" disabled>
               Apply random casing</button
+            ><button id="shuffle-case" type="button" disabled>
+              Apply shuffled casing</button
             ><button id="restore-case" type="button" disabled>
               Restore default casing
             </button>
           </div>
           <p class="hint">
             Each click securely rerolls lowercase or UPPERCASE for every current
-            word. Random patterns may repeat. Restore returns to the original
-            word-list casing. New words start with default casing.
+            word. Random patterns may repeat. Shuffled casing securely picks a
+            casing digit for each word and uppercases the letter at that
+            position, counting from 1 (digit 0 means the entry has no letters).
+            The casing digits are appended to the end of the passphrase. Restore
+            returns to the original word-list casing. New words start with
+            default casing.
           </p>
         </div>
         <button id="generate" type="button" class="primary">
@@ -454,6 +469,17 @@
           placeholder="Your passphrase will appear here"
         ></textarea>
         <p id="summary" class="hint">No words yet.</p>
+        <div id="casing-digits-wrap" hidden>
+          <h2 id="casing-digits-title">Casing digits</h2>
+          <output
+            id="casing-digits"
+            aria-labelledby="casing-digits-title"
+          ></output>
+          <p class="hint">
+            One digit per word, in order. Each digit is the 1-based position of
+            the uppercased letter in that word.
+          </p>
+        </div>
         <div class="actions">
           <button id="copy" type="button" disabled>Copy passphrase</button
           ><button id="clear" type="button" disabled>Clear</button>
@@ -8290,7 +8316,7 @@
           throw new Error(
             "Enter exactly five dice rolls, using only digits 1–6.",
           );
-        return { key, word: WORDS[key], upper: false };
+        return { key, word: WORDS[key], upper: false, casePos: null };
       }
       function render() {
         const separator = !$("use-separator").checked
@@ -8299,9 +8325,24 @@
             ? $("custom-separator").value
             : $("separator").value;
         const words = records.map((r) =>
-          r.upper ? r.word.toUpperCase() : r.word,
+          r.upper
+            ? r.word.toUpperCase()
+            : r.casePos
+              ? r.word.slice(0, r.casePos - 1) +
+                r.word[r.casePos - 1].toUpperCase() +
+                r.word.slice(r.casePos)
+              : r.word,
         );
-        $("output").value = words
+        const shuffled = records.some((r) => r.casePos !== null);
+        $("casing-digits-wrap").hidden = !shuffled;
+        $("casing-digits").textContent = shuffled
+          ? records.map((r) => r.casePos ?? 0).join("")
+          : "";
+        // Shuffled casing appends its digits as a final passphrase segment.
+        const segments = shuffled
+          ? [...words, $("casing-digits").textContent]
+          : words;
+        $("output").value = segments
           .map(
             (word, i) =>
               (i
@@ -8312,20 +8353,23 @@
                 : "") + word,
           )
           .join("");
-        $("random-separator").disabled = records.length < 2;
+        $("random-separator").disabled = segments.length < 2;
         $("summary").textContent = records.length
           ? `${records.length} ${records.length === 1 ? "word" : "words"} · ${$("output").value.length} characters`
           : "No words yet.";
         $("words").replaceChildren(
           ...records.map((r, i) => {
             const li = document.createElement("li");
-            li.textContent = `${i + 1}. ${r.key} → ${words[i]}`;
+            li.textContent =
+              `${i + 1}. ${r.key} → ${words[i]}` +
+              (r.casePos !== null ? ` (casing digit ${r.casePos})` : "");
             return li;
           }),
         );
         $("copy").disabled =
           $("clear").disabled =
           $("random-case").disabled =
+          $("shuffle-case").disabled =
           $("restore-case").disabled =
             !records.length;
       }
@@ -8430,7 +8474,7 @@
       $("random-separator").addEventListener("click", () => {
         try {
           const next = Array.from(
-            { length: Math.max(0, records.length - 1) },
+            { length: records.length },
             () => SEPARATORS[randomBelow(SEPARATORS.length)],
           );
           randomSeparators = next;
@@ -8446,6 +8490,7 @@
           const next = records.map((r) => ({
             ...r,
             upper: randomBelow(2) === 1,
+            casePos: null,
           }));
           records = next;
           render();
@@ -8454,8 +8499,29 @@
           $("status").textContent = e.message;
         }
       });
+      // Returns a 1-based letter position; 0 when the entry has no letters.
+      function randomLetterPos(word) {
+        const positions = [...word].flatMap((c, i) =>
+          c.toLowerCase() !== c.toUpperCase() ? [i + 1] : [],
+        );
+        return positions.length ? positions[randomBelow(positions.length)] : 0;
+      }
+      $("shuffle-case").addEventListener("click", () => {
+        try {
+          const next = records.map((r) => ({
+            ...r,
+            upper: false,
+            casePos: randomLetterPos(r.word),
+          }));
+          records = next;
+          render();
+          $("status").textContent = "New shuffled casing applied.";
+        } catch (e) {
+          $("status").textContent = e.message;
+        }
+      });
       $("restore-case").addEventListener("click", () => {
-        records = records.map((r) => ({ ...r, upper: false }));
+        records = records.map((r) => ({ ...r, upper: false, casePos: null }));
         render();
         $("status").textContent = "Default casing restored.";
       });
